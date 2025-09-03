@@ -1,0 +1,16 @@
+langchain==0.3.22
+langchain-community==0.3.19
+streamlit==1.49.1
+langchain-openai==0.3.7
+langchain-google-genai==2.0.11
+langchain-anthropic==0.3.8
+langchain-chroma==0.2.2
+azure-core==1.35.0
+azure-devops==7.1.0b4
+msrest==0.7.1
+streamlit_antd_components==0.3.2
+docx==0.2.4
+python-docx==1.2.0
+fpdf==1.7.2
+markdown==3.8.2
+beautifulsoup4==4.11.1
