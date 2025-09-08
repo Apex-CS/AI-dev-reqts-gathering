@@ -1,17 +1,20 @@
-import os
 import io
 from typing import Dict
 
 import streamlit as st
 from dotenv import load_dotenv
-from langchain_openai import AzureChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
 import docx
 from fpdf import FPDF
 import markdown
 from bs4 import BeautifulSoup
+from docx import Document
+import json
+
+import src.classes.prompt_templates as pt
+import src.functions.language_models as lm
+import src.functions.ado_connector as ado_connector
 
 st.set_page_config(
     page_title="Apex Systems AI",
@@ -31,7 +34,15 @@ DEFAULT_SESSION_STATE = {
     "LLM_MODEL_TEMPERATURE": 0.0,
     "messages": [],
     "chat_history_store": {},
-    "doc_added": False
+    "doc_added": False,
+    "summary": None,
+    "user_stories": None,
+    "connection_ado": {
+        "base_url": "https://dev.azure.com/anflores",
+        "project_name": "AI Requirements Gathering",
+        "personal_access_token": "",
+        "user_email": ""
+    }
 }
 DOCX_TYPES = [
     "application/docx",
@@ -47,41 +58,7 @@ _store: Dict[str, InMemoryChatMessageHistory] = st.session_state["chat_history_s
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
     return _store.setdefault(session_id, InMemoryChatMessageHistory())
 
-def construct_model(model_name, temperature):
-    return AzureChatOpenAI(
-        azure_deployment=model_name,
-        temperature=temperature,
-        api_version=os.environ.get("AZURE_OPENAI_API_VERSION", "2024-02-15-preview"),
-        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT", ""),
-    )
-
-model = construct_model(st.session_state.LLM_MODEL_NAME, st.session_state.LLM_MODEL_TEMPERATURE)
-
-# --- Prompt Templates ---
-template = """
-Answer the following question: {question}
-use {documents} to help answer the question.
-"""
-
-initial_template = """
-You are a highly skilled Software Architect. Your task is to analyze the provided transcription to extract software requirements, identify potential issues, and gather all relevant context.
-
-Please use the following transcription as your source material:
-{documents}
-
-Your response should include:
-1. A detailed summary of the transcription.
-2. A list of identified requirements and any ambiguities or issues found.
-3. Suggestions for possible improvements or changes.
-4. A set of proposed User Stories, each with:
-    - Title
-    - Description
-    - Acceptance Criteria
-
-Present your analysis in a clear, organized, and professional manner.
-"""
-
-prompt = ChatPromptTemplate.from_template(template)
+model = lm.construct_model(st.session_state.LLM_MODEL_NAME, st.session_state.LLM_MODEL_TEMPERATURE)
 chain_with_history = RunnableWithMessageHistory(model, get_session_history)
 
 # --- Utility Functions ---
@@ -123,7 +100,7 @@ def export_chat_to_pdf(messages):
 def main():
     st.title("Apex AI Requirements Gathering")
     if st.session_state.doc_added:
-        st.info("Document added. You can now ask questions related to the document.")
+        st.toast("Document added. You can now ask questions related to the document.")
         handle_user_input()
     else:
         st.warning("Please upload a document to get started.")
@@ -139,18 +116,31 @@ def handle_file_upload():
             documents = extract_text_from_docx(uploaded_file.read())
     submit = st.button("Submit")
     if submit and uploaded_file:
-        prompt_text = initial_template.format(documents=documents)
+        prompt_text = pt.initial_transcription_template.format(documents=documents)
         response = chain_with_history.invoke(
             prompt_text,
             config={"configurable": {"session_id": "global"}}
         )
+        
+        try:
+            response_json = json.loads(response.content[response.content.index('{'):response.content.rindex('}')+1])
+        except Exception as e:
+            print("Failed to parse response as JSON:", e)
+            response_json = {}
+
+        st.session_state.summary = response_json.get("summary", None)
+        st.session_state.user_stories = response_json.get("user_stories", None)
+        
         get_session_history("global").add_message(prompt_text)
-        add_message("user", prompt_text)
-        add_message("assistant", response.content)
+        #add_message("user", prompt_text)
+        add_message("assistant", st.session_state.summary)
+        for story in st.session_state.user_stories or []:
+            formated_story = f"**Title:** {story.get('title', '')}\n\n**Description:** {story.get('description', '')}\n\n**Acceptance Criteria:**\n" + "\n".join([f"- {ac}" for ac in story.get('acceptance_criteria', [])])
+            add_message("assistant", formated_story)
         get_session_history("global").add_message(response)
-        st.info("Document added. You can now ask questions related to the document.")
-        st.session_state.doc_added = True
         handle_user_input()
+        
+        
 
 def handle_user_input():
     render_messages(st.session_state.messages)
@@ -169,7 +159,7 @@ def handle_user_input():
                 documents += extract_text_from_docx(file.read())
         question = getattr(user_input, "text", user_input)
         add_message("user", question)
-        prompt_text = template.format(question=question, documents=documents)
+        prompt_text = pt.answer_template.format(question=question, documents=documents)
         response = chain_with_history.invoke(
             prompt_text,
             config={"configurable": {"session_id": "global"}}
@@ -186,6 +176,51 @@ def handle_user_input():
             file_name="chat_history.pdf",
             mime="application/pdf"
         )
+        
+    
+    st.toast("Document added. You can now ask questions related to the document.")
+    st.session_state.doc_added = True
+    if st.session_state.summary:
+        doc = Document()
+        doc.add_heading("Document Summary", level=1)
+        # Convert markup (markdown) to HTML, then parse and add to docx
+        html = markdown.markdown(st.session_state.summary)
+        soup = BeautifulSoup(html, "html.parser")
+        for element in soup.children:
+            if element.name == "p":
+                doc.add_paragraph(element.get_text())
+            elif element.name == "ul":
+                for li in element.find_all("li"):
+                    doc.add_paragraph(li.get_text(), style="List Bullet")
+            elif element.name == "ol":
+                for li in element.find_all("li"):
+                    doc.add_paragraph(li.get_text(), style="List Number")
+            elif element.name and element.name.startswith("h") and element.name[1:].isdigit():
+                level = int(element.name[1:])
+                doc.add_heading(element.get_text(), level=level)
+            else:
+                doc.add_paragraph(element.get_text())
+        doc_bytes = io.BytesIO()
+        doc.save(doc_bytes)
+        doc_bytes.seek(0)
+        st.download_button(
+        label="Download Summary as Word Document",
+        data=doc_bytes,
+        file_name="document_summary.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
+
+    if st.session_state.user_stories:
+        if st.button("Save Work Items to Azure DevOps"):
+            st.toast("Saving work items to Azure DevOps...")
+            connector = ado_connector.AdoConnector()
+            conn_info = st.session_state.connection_ado
+            for story in st.session_state.user_stories:
+                title = story.get("title", "No Title")
+                description = story.get("description", "")
+                acceptance_criteria = "\n".join([f"- {ac}" for ac in story.get("acceptance_criteria", [])])
+                connector.add_work_item(title, description, acceptance_criteria, conn_info["project_name"])
+            st.success("Work items have been saved to Azure DevOps.")
 
 if __name__ == "__main__":
     main()
