@@ -14,3 +14,10 @@ python-docx==1.2.0
 fpdf==1.7.2
 markdown==3.8.2
 beautifulsoup4==4.11.1
+Authlib==1.5.2
+python-dotenv==1.0.1
+pypdf==5.4.0
+pysqlite3==0.5.4
+docx2txt==0.9
+PyPDF2==3.0.1
+jira==3.10.5

@@ -2,7 +2,7 @@ from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 import streamlit as st
 import json
-from src.classes import work_item, common_data, commits, history_data
+from src.classes import work_item, common_data
 
 import src.interfaces.connector
 
@@ -84,7 +84,9 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             work_items = wit_client.get_work_items(ids, expand='relations')
             result = []
             for item in work_items:
-                result.append(work_item.WorkItem.from_azure_devops(item))
+                wi_type = item.fields.get('System.WorkItemType', 'Unknown')
+                if wi_type == 'User Story':
+                    result.append(work_item.WorkItem.from_azure_devops(item))
             return result
         except Exception as e:
             st.error(f"Failed to get Azure DevOps client: {e}")
@@ -99,7 +101,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                 {"op": "add", "path": "/fields/System.Title", "value": title},
                 {"op": "add", "path": "/fields/System.Description", "value": description},
                 {"op": "add", "path": "/fields/Microsoft.VSTS.Common.AcceptanceCriteria", "value": acceptance_criteria or ''},
-                {"op": "add", "path": "/fields/System.Tags", "value": "Qualiverse AI Created"}
+                {"op": "add", "path": "/fields/System.Tags", "value": "AI Requirements Gathering"}
             ]
             return wit_client.create_work_item(patch_document, project_name, 'Task')
         except Exception as e:
@@ -110,25 +112,12 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
         try:
             wi = self.get_wit_client().get_work_item(work_item_id)
             wi_type = wi.fields.get("System.WorkItemType", "")
-            return work_item.WorkItem.from_azure_devops(wi)
+            if wi_type == "User Story":
+                return work_item.WorkItem.from_azure_devops(wi)
+            return None
         except Exception as e:
             st.error(f"Error fetching work item by id: {e}")
             return None
-
-    def fetch_work_item_commits_by_id(self, work_item_id):
-        try:
-            wi = self.get_wit_client().get_work_item(work_item_id, expand='relations')
-            relations = getattr(wi, 'relations', []) if wi else []
-            work_item_obj = common_data.CommonData.from_azure_devops(wi)
-            commits_list = sorted(
-                [rel for rel in relations if getattr(rel, 'rel', '') == 'ArtifactLink'],
-                key=lambda rel: getattr(rel, 'url', ''),
-                reverse=True
-            ) if relations else []
-            return {"work_item": work_item_obj, "commits": commits_list}
-        except Exception as e:
-            st.error(f"Error fetching work item commits: {e}")
-            return {"work_item": None, "commits": []}
 
     def update_work_item(self, work_item_id, title=None, description=None, acceptance_criteria=None):
         try:
@@ -149,7 +138,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             patch.append({
                 "op": "add",
                 "path": "/fields/System.Tags",
-                "value": "Qualiverse AI Improved"
+                "value": "Planningverse AI Improved"
             })
             if patch:
                 wit_client.update_work_item(patch, work_item_id)
@@ -171,7 +160,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                 patch.append({"op": "add", "path": "/fields/Microsoft.VSTS.TCM.Steps", "value": steps_xml})
             if parameters:
                 patch.append({"op": "add", "path": "/fields/Microsoft.VSTS.TCM.Parameters", "value": parameters})
-            patch.append({"op": "add", "path": "/fields/System.Tags", "value": "Qualiverse AI Improved"})
+            patch.append({"op": "add", "path": "/fields/System.Tags", "value": "Planningverse AI Improved"})
             if patch:
                 wit_client.update_work_item(patch, work_item_id)
         except Exception as e:
@@ -191,9 +180,6 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             )
         return f"<steps id=\"0\" last=\"{len(steps.splitlines())}\">{steps_xml}</steps>"
 
-    def update_work_item_with_test_cases(self, work_item_id, test_cases):
-        pass
-
     def update_work_item_with_test_results(self, work_item_id, test_results):
         try:
             wit_client = self.get_wit_client()
@@ -211,58 +197,12 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                 wit_client.update_work_item(patch, work_item_id)
         except Exception as e:
             st.error(f"Error updating work item with test results: {e}")
-
-    def get_commit_details(self, commit_url, project_name):
-        try:
-            git_client = self.get_git_client()
-            if not git_client:
-                return "Git client not available."
-            commit_id = commit_url[-40:]
-            if not commit_id:
-                return "Selected commit ID not found."
-            commit = git_client.get_commit(commit_id=commit_id, repository_id=project_name, project=project_name)
-            return commits.Commits.from_azure_devops(commit)
-        except Exception as e:
-            return f"Error fetching commit: {e}"
-
-    def get_git_commit_content(self, repo_url, project_name):
-        try:
-            git_client = self.get_git_client()
-            if not git_client:
-                return "Git client not available."
-            commit_id = repo_url.split('/')[-1]
-            if not commit_id:
-                return "Repository ID or Commit ID not found."
-            commit = git_client.get_commit(commit_id=commit_id, repository_id=project_name, project=project_name)
-            changes = git_client.get_changes(commit_id=commit_id, repository_id=project_name, project=project_name)
-            contents = {}
-            for change in getattr(changes, 'changes', []):
-                item = getattr(change, 'item', None) or change.get('item')
-                if item and (getattr(item, 'git_object_type', '') == 'blob' or item.get('gitObjectType') == 'blob'):
-                    blob_sha = getattr(item, 'object_id', None) or item.get('objectId')
-                    if blob_sha:
-                        content_gen = git_client.get_blob_content(
-                            repository_id=project_name, download=True, sha1=blob_sha, project=project_name
-                        )
-                        content = b"".join(content_gen)
-                        if b'\x00' not in content:
-                            try:
-                                path = getattr(item, 'path', None) or (item.get('path') if isinstance(item, dict) else None)
-                                contents[path] = content.decode('utf-8')
-                            except Exception:
-                                contents[path] = content
-            return contents if contents else "No blob (file) changes found in this commit."
-        except Exception as e:
-            return f"Error fetching commit content: {e}"
-
-    def get_work_item_history(self, work_item_id):
-        try:
-            wit_client = self.get_wit_client()
-            items = []
-            if not wit_client:
-                return []
-            history = wit_client.get_updates(work_item_id)
-            return [history_data.HistoryData.from_azure_devops(entry) for entry in history]
-        except Exception as e:
-            st.error(f"Error fetching work item history: {e}")
-            return []
+            
+    def fetch_work_item_commits_by_id():
+        pass
+    def get_commit_details():
+        pass
+    def get_git_commit_content():
+        pass
+    def update_work_item_with_test_cases():
+        pass

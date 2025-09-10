@@ -60,3 +60,7 @@ class ConnectorInterface(ABC):
     @abstractmethod
     def get_git_commit_content(self, repo_url, project_name):
         pass
+    
+    @abstractmethod
+    def get_work_item_history(self, work_item_id):
+        pass

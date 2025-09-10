@@ -37,7 +37,22 @@ Your tasks:
 4. Let me know which phase of SDLC is taking most of the time and why
 5. Provide insights or recommendations based on the analysis of the history.
 
-Here is the work item history:
+Here is the work items history:
+{history_json}
+"""
+
+multiple_history_analysis_template = """
+You are a skilled Software Architect. Provided below is a JSON containing the complete history of an Azure DevOps work items.
+
+Your tasks:
+1. Summarize the key interactions and changes throughout the work items lifecycle.
+2. identify any patterns or recurring themes in the comments and updates.
+3. Highlight any significant decisions or changes that impacted the work items progression.
+4. Let me know which phase of SDLC is taking most of the time and why
+5. Provide insights or recommendations based on the analysis of the history.
+6. Sort the work items depending of the priority of being addressed, and provide an explanation for the prioritization.
+
+Here is the work items history:
 {history_json}
 """
 
