@@ -2,6 +2,7 @@ import os
 import streamlit as st
 from dotenv import load_dotenv
 import streamlit_antd_components as sac
+import json
 
 from src.functions import utility_functions
 from src.functions.settings import (
@@ -22,7 +23,13 @@ DEFAULT_SESSION_STATE = {
     "show_home": "Home",
     "current_project": "",
     "project_config": {},
-    "connection_ado": {},
+    "connection_ado": {
+        "base_url": "https://dev.azure.com/anflores",
+        "tool_type": "Requirements Management",
+        "tool_name": "ADO",
+        "user_email": "",
+        "project_name": "SDLC Demo",
+    },
     "connection_jira": {},
     "current_connector": None,
     "alm_project_connector": {},
@@ -37,6 +44,9 @@ DEFAULT_SESSION_STATE = {
     "story_item_selector": 0,
     "test_item_selector": 0,
     "last_work_item_selector": 0,
+    "history_json": {},
+    "history_response": {},
+    "doc_added": False,
 }
 
 for key, value in DEFAULT_SESSION_STATE.items():
@@ -200,6 +210,11 @@ def go_home():
     st.session_state["show_home"] = "Home"
     st.session_state["work_item_selector"] = 0
 
+def go_transcription_import():
+    st.session_state["show_home"] = "Transcription_Import"
+    st.session_state["leaving_work_item"] = st.session_state["work_item_selector"]
+    st.session_state["work_item_selector"] = None
+
 def go_settings():
     st.session_state["show_home"] = "Global_Settings"
     st.session_state["leaving_work_item"] = st.session_state["work_item_selector"]
@@ -239,6 +254,16 @@ def common_sidebar():
                         utility_functions.SETTINGS_DB, project_name, project_rqm['tool_name']
                     )
                     work_items = alm_tool.fetch_data_by_ids(selected_work_items)
+                    
+                    for item in work_items:
+                        print(f"Fetching history for work item {item.id}")
+                        work_item_history = alm_tool.get_work_item_history(item.id)
+                        if not work_item_history:
+                            return
+                        for entry in work_item_history:
+                            if entry and entry.fields:
+                                st.session_state.history_json[item.id] = json.dumps(entry.fields, default=str)
+                    
                     st.session_state["project_config"][project_rqm['tool_name']] = {
                         "alm_tool": alm_tool,
                         "url": project_rqm['url'],
@@ -283,6 +308,7 @@ def common_sidebar():
             unsafe_allow_html=True,
         )
         st.sidebar.button('🏠 Home', on_click=go_home)
+        st.sidebar.button('📝 Transcription Import', on_click=go_transcription_import)
         sac.tree(
             items=main_project,
             key='work_item_selector',
@@ -295,7 +321,6 @@ def common_sidebar():
             index=0
         )
         st.sidebar.button('⚙️ Enterprise Settings', on_click=go_settings)
-        st.sidebar.button('📊 Traceability Matrix', on_click=go_command_center)
 
         os.environ["LLM_MODEL_NAME"] = st.session_state.get("LLM_MODEL_NAME", "apex-demos-gpt-4-32k")
         os.environ["LLM_MODEL_TEMPERATURE"] = str(st.session_state.get("LLM_MODEL_TEMPERATURE", 0.0))

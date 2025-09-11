@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS llm_settings (
 PROJECT_DETAILS_TABLE = """
 CREATE TABLE IF NOT EXISTS project_details (
     project_name TEXT PRIMARY KEY,
-    project_description TEXT
+    project_description TEXT,
+    project_summary TEXT
 )
 """
 
@@ -64,32 +65,33 @@ def get_llm_settings(db_path):
         return {row[0]: row[1] for row in cursor.fetchall()}
 
 # Project Details
-def save_project_details(db_path, project_name, project_description):
+def save_project_details(db_path, project_name, project_description, project_summary):
     with db_cursor(db_path) as cursor:
         cursor.execute(PROJECT_DETAILS_TABLE)
         cursor.execute("""
-            INSERT INTO project_details (project_name, project_description)
-            VALUES (?, ?)
-            ON CONFLICT(project_name) DO UPDATE SET project_description=excluded.project_description
-        """, (project_name, project_description))
+            INSERT INTO project_details (project_name, project_description, project_summary)
+            VALUES (?, ?, ?)
+            ON CONFLICT(project_name) DO UPDATE SET project_description=excluded.project_description, project_summary=excluded.project_summary
+        """, (project_name, project_description, project_summary))
 
 def get_projects_details(db_path):
     with db_cursor(db_path) as cursor:
         cursor.execute(PROJECT_DETAILS_TABLE)
-        cursor.execute("SELECT project_name, project_description FROM project_details")
+        cursor.execute("SELECT project_name, project_description, project_summary FROM project_details")
         return [{
             "project_name": row[0],
-            "project_description": row[1]
+            "project_description": row[1],
+            "project_summary": row[2]
         } for row in cursor.fetchall()]
-        
-def edit_project_details(db_path, project_name, new_title, new_description):
+
+def edit_project_details(db_path, project_name, new_title, new_description, new_summary):
     with db_cursor(db_path) as cursor:
         cursor.execute(PROJECT_DETAILS_TABLE)
         cursor.execute("""
             UPDATE project_details
-            SET project_name = ?, project_description = ?
+            SET project_name = ?, project_description = ?, project_summary = ?
             WHERE project_name = ?
-        """, (new_title, new_description, project_name))
+        """, (new_title, new_description, new_summary, project_name))
 
 def delete_project_details(db_path, project_name):
     with db_cursor(db_path) as cursor:
@@ -126,11 +128,12 @@ def delete_rqm_tool_details(db_path, project_name, tool_name):
 def get_project_info(db_path, project_name):
     with db_cursor(db_path) as cursor:
         cursor.execute(PROJECT_DETAILS_TABLE)
-        cursor.execute("SELECT project_name, project_description FROM project_details WHERE project_name = ?", (project_name,))
+        cursor.execute("SELECT project_name, project_description, project_summary FROM project_details WHERE project_name = ?", (project_name,))
         result = cursor.fetchone()
         return {
             "project_name": result[0] if result else None,
-            "project_description": result[1] if result else None
+            "project_description": result[1] if result else None,
+            "project_summary": result[2] if result else None
         }
         
         

@@ -16,15 +16,14 @@ import src.classes.prompt_templates as pt
 import src.functions.language_models as lm
 import src.functions.ado_connector as ado_connector
 
-st.set_page_config(
-    page_title="Apex Systems AI",
-    page_icon="https://www.apexsystems.com/profiles/apex/themes/apex_bootstrap/favicon.ico",
-    layout="wide",
-    menu_items={
-        'About': (
-            "# Apex Systems AI \n"
-            "A demo application showcasing AI capabilities for requirements gathering.\n")
-    }
+from src.functions import utility_functions
+import re
+import datetime
+
+from src.functions.settings import (
+    save_project_details,
+    save_rqm_tool_details,
+    save_remove_work_items_project
 )
 
 # --- Constants and Config ---
@@ -34,11 +33,16 @@ DEFAULT_SESSION_STATE = {
     "LLM_MODEL_TEMPERATURE": 0.0,
     "messages": [],
     "chat_history_store": {},
-    "doc_added": False,
     "summary": None,
     "user_stories": None,
-    "connection_ado": {
-    }
+    "connection_ado_default": {
+        "base_url": "https://dev.azure.com/anflores",
+        "tool_type": "Requirements Management",
+        "tool_name": "ADO",
+        "user_email": "",
+        "project_name": "SDLC Demo",
+    },
+    "filename": "",
 }
 DOCX_TYPES = [
     "application/docx",
@@ -93,7 +97,7 @@ def export_chat_to_pdf(messages):
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 # --- Streamlit App Logic ---
-def main():
+def render():
     st.title("Apex AI Requirements Gathering")
     if st.session_state.doc_added:
         st.toast("Document added. You can now ask questions related to the document.")
@@ -106,11 +110,12 @@ def handle_file_upload():
     uploaded_file = st.file_uploader("Upload a document", type=["pdf", "docx"])
     documents = ""
     if uploaded_file:
+        st.session_state.filename = uploaded_file.name.rsplit('.', 1)[0]
         if uploaded_file.type == "application/pdf":
             documents = extract_text_from_pdf(uploaded_file.read())
         elif uploaded_file.type in DOCX_TYPES:
             documents = extract_text_from_docx(uploaded_file.read())
-    submit = st.button("Submit")
+    submit = st.button("Submit", type="primary")
     if submit and uploaded_file:
         prompt_text = pt.initial_transcription_template.format(documents=documents)
         response = chain_with_history.invoke(
@@ -147,12 +152,6 @@ def handle_user_input():
     )
     documents = ""
     if user_input:
-        # Handle file attachments
-        for file in getattr(user_input, "files", []):
-            if file.type == "application/pdf":
-                documents += extract_text_from_pdf(file.read())
-            elif file.type in DOCX_TYPES:
-                documents += extract_text_from_docx(file.read())
         question = getattr(user_input, "text", user_input)
         add_message("user", question)
         prompt_text = pt.answer_template.format(question=question, documents=documents)
@@ -207,7 +206,7 @@ def handle_user_input():
         )
 
     if st.session_state.user_stories:
-        if st.button("Save Work Items to Azure DevOps"):
+        if st.button("🚀 Save Work Items to Azure DevOps", type="primary"):
             st.toast("Saving work items to Azure DevOps...")
             connector = ado_connector.AdoConnector()
             conn_info = st.session_state.connection_ado
@@ -217,6 +216,52 @@ def handle_user_input():
                 acceptance_criteria = "\n".join([f"- {ac}" for ac in story.get("acceptance_criteria", [])])
                 connector.add_work_item(title, description, acceptance_criteria, conn_info["project_name"])
             st.success("Work items have been saved to Azure DevOps.")
+            
+    if st.session_state.user_stories:
+        if st.button("💾 Save as Project", type="primary"):
+            st.toast("Saving as a project...")
+            # Extract context section from summary
+            context_text = ""
+            if st.session_state.summary:
+                match = re.search(r'#### Context:(.*?)####', st.session_state.summary, re.DOTALL)
+                if match:
+                    context_text = match.group(1).strip()
+            project_name = f"{datetime.datetime.now().strftime('%Y-%m-%d')} - {st.session_state.filename}"
+            project_description = context_text
+            save_project_details(
+                db_path=utility_functions.SETTINGS_DB,
+                project_name=project_name,
+                project_description=project_description,
+                project_summary=st.session_state.summary
+            )
+            conn_info = st.session_state.connection_ado_default
+            print("Connection Info:", conn_info)
+            save_rqm_tool_details(
+                db_path=utility_functions.SETTINGS_DB,
+                project=project_name,
+                tool_type=conn_info["tool_name"],
+                rqm_type=conn_info["tool_type"],
+                url=conn_info["base_url"],
+                tool_name=conn_info["project_name"],
+                pat=conn_info["personal_access_token"],
+                user_email=conn_info["user_email"]
+            )
+            connector = ado_connector.AdoConnector()
+            for story in st.session_state.user_stories:
+                title = story.get("title", "No Title")
+                description = story.get("description", "")
+                acceptance_criteria = "\n".join([f"- {ac}" for ac in story.get("acceptance_criteria", [])])
+                last_item = connector.add_work_item(title, description, acceptance_criteria, conn_info["project_name"])
+                print("Last added work item:", last_item)
+                save_remove_work_items_project(
+                    db_path=utility_functions.SETTINGS_DB,
+                    project_name=project_name,
+                    rqm_name=conn_info["tool_name"],
+                    work_item_id=last_item.id
+                )
 
-if __name__ == "__main__":
-    main()
+            st.success("Work items have been saved to Azure DevOps.")
+
+            st.session_state["load_tree"] = True
+            st.rerun()
+            st.success(f"Project '{project_name}' added successfully.")

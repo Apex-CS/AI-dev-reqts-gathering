@@ -3,11 +3,6 @@ import streamlit as st
 import re
 
 from src.functions.helpers import (
-    MODEL_MAPPINGS, 
-    MODEL_OPTIONS, 
-    ALM_TOOL_TYPES, 
-    LLMModelConfig, 
-    construct_model,
     invoke_with_history
 )
 from src.classes.prompt_templates import multiple_history_analysis_template 
@@ -20,7 +15,6 @@ from src.functions.settings import (
     save_remove_work_items_project,
 )
 from src.functions import utility_functions
-import json
 
 st.session_state.setdefault("current_page", "Settings")
 st.session_state.setdefault("project_config", {})
@@ -61,39 +55,20 @@ def render(type=None):
 def render_info_tab(project_info, alm_tools):
     st.write("### Current Description")
     st.write(project_info.get("project_description", "No description available."))
-    st.divider()
-    if st.button("Trigger IA Analysis", key="trigger_ia_analysis"):
+    if not project_info.get("project_summary") == "":
+        st.markdown(project_info.get("project_summary", "No summary available."))
+    if st.button("🤖 **Run History IA Analysis**", type="primary"):
         st.toast("IA analysis triggered.")
-        # Add your IA analysis logic here
         history_json = {}
         for project in st.session_state["selected_work_items"]:
             for item in st.session_state["selected_work_items"][project]:
-                connector = st.session_state["current_connector"]
-                work_item_history = connector.get_work_item_history(item)
-                if not work_item_history:
-                    st.warning("No history available for this work item.")
-                    return
-                for entry in work_item_history:
-                    if entry and entry.fields:
-                        history_json[item] = json.dumps(entry.fields, default=str)
-        model_name = st.session_state.get("LLM_MODEL_NAME")
-        temperature = st.session_state.get("LLM_MODEL_TEMPERATURE")
-        llm_config = LLMModelConfig(model_name=model_name, temperature=temperature)
-        llm_model = construct_model(llm_config=llm_config)
+                history_json[item] = st.session_state.history_json[item]
+                        
         prompt_text = multiple_history_analysis_template.format(
-            json.dumps(history_json, indent=2)
+            history_json=history_json
         )
-        print("prompt_text", prompt_text)
-        response = invoke_with_history(prompt_text)
-        st.markdown(response)
-
-    if alm_tools:
-        for tool in alm_tools:
-            st.markdown(
-                f"**{tool['tool_type']}**: {tool['tool_name']} (URL: {tool['url']})"
-            )
-    else:
-        st.write("No RQM tools configured.")
+        st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+        st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
 
 def render_general_tab(alm_tools, project_name):
     st.subheader("Tool Administration")
@@ -190,7 +165,7 @@ def render_tool_expander(tool):
     url = tool["url"]
     pat = tool["pat"]
     user_email = tool["user_email"]
-
+    st.write(tool)
 
     # Load selected work items for this tool
     st.session_state["selected_work_items"][tool_name] = get_work_items_project(

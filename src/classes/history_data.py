@@ -18,10 +18,8 @@ class HistoryData:
             'Microsoft.VSTS.Common.AcceptanceCriteria', 'System.Tags'
         ]
         fields = {}
-        print("entry.fields", entry.fields)
         if entry.fields:
             for name in field_names:
                 field_obj = entry.fields.get(name)
                 fields[name] = field_obj.__dict__ if field_obj else None
-                print(f"{name}: {fields[name]}")
             return HistoryData(fields=fields)

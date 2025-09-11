@@ -8,6 +8,7 @@ import pages.Code_Analysis as code_analysis
 import pages.History_Analysis as history_analysis
 import pages.Project_Panel as project_panel
 import pages.Global_Settings as global_settings
+import pages.Transcript_tool as transcript_tool
 
 from langchain.prompts import PromptTemplate
 
@@ -47,7 +48,9 @@ DEFAULT_SESSION_STATE = {
     "load_tree": True,
     "leaving_work_item": 0,
     "incorporate_from_test_gen": "",
-    "selected_tab_index": 0
+    "selected_tab_index": 0,
+    "history_json": {},
+    "history_response": {},
 }
 
 def set_default_session_state():
@@ -72,13 +75,12 @@ def login_flow():
     st.stop()
 
 def home():
-    st.title("Welcome to Planningverse")
-    st.subheader(
-        "This is a demo of how we can use Generative AI to help with the Software Development Life Cycle (SDLC) by integrating with Azure DevOps (ADO) to fetch work items and generate test cases."
-    )
-    st.subheader(
-        "You can navigate through the work items using the sidebar and analyze the work items to generate test cases."
-    )
+    st.image("logo_p.jpg", width=200)
+    st.title("AI-powered project planning assistant")
+    st.subheader("Leverage Generative AI to automatically extract actionable requirements from transcriptions and notes, streamlining the creation of user stories.")
+    st.subheader("Estimate timelines, effort, and risks for your work items by analyzing their complete history.")
+    st.subheader("Analyze code snippets to uncover performance bottlenecks, optimization opportunities, and potential issues.")
+    st.subheader("Order issues by priority based on historical data and project context.")
 
 def initialize_chat(messages):
     session_id = st.session_state.get("work_item_selector", "default_session")
@@ -172,6 +174,8 @@ def main():
     show_home = st.session_state.get("show_home")
     if show_home == "Home":
         home()
+    elif show_home == "Transcription_Import":
+        transcript_tool.render()
     elif show_home == "Settings":
         project_panel.render()
     elif show_home == "Info":
