@@ -262,6 +262,8 @@ def common_sidebar():
                         st.session_state.comments_json[item.id] = []
                         work_item_history = alm_tool.get_work_item_history(item.id)
                         work_item_comments = alm_tool.get_work_item_comments(project_rqm['tool_name'], item.id)
+                        work_item_commits = alm_tool.get_work_item_commits(item.id)
+                        print("work_item_commits", work_item_commits)
                         if not work_item_history:
                             return
                         for entry in work_item_history:

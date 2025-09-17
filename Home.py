@@ -51,6 +51,7 @@ DEFAULT_SESSION_STATE = {
     "selected_tab_index": 0,
     "history_json": {},
     "comments_json": {},
+    "commits_json": {},
     "history_response": {},
 }
 

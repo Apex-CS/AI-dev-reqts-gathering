@@ -280,3 +280,13 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
         except Exception as e:
             st.error(f"Error fetching work item comments: {e}")
             return []
+        
+    def get_work_item_commits(self, work_item_id):
+        commits = []
+        commits_by_id = self.fetch_work_item_commits_by_id(work_item_id)
+        print("Commits by ID:", commits_by_id)
+        for commits_iter in commits_by_id.get("commits", []):
+            commit_details = self.get_commit_details(commits_iter.url, commits_iter.url.split('/')[4])
+            print("Commit Details:", commit_details)
+            commits.append(commit_details)
+        return commits

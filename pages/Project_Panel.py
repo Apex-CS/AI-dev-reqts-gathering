@@ -5,7 +5,7 @@ import re
 from src.functions.helpers import (
     invoke_with_history
 )
-from src.classes.prompt_templates import multiple_history_analysis_template 
+from src.classes.prompt_templates import multiple_history_analysis_template , project_code_analysis_template
 from src.functions.settings import (
     get_project_info,
     save_rqm_tool_details,
@@ -57,29 +57,53 @@ def render_info_tab(project_info, alm_tools):
     st.write(project_info.get("project_description", "No description available."))
     if not project_info.get("project_summary") == "":
         st.markdown(project_info.get("project_summary", "No summary available."))
-    if st.button("🤖 **Run History IA Analysis**", type="primary"):
-        st.toast("IA analysis triggered.")
-        history_json = {}
-        comments_json = {}
-        work_item_json = {}
-        for project in st.session_state["selected_work_items"]:
-            for item in st.session_state["selected_work_items"][project]:
-                history_json[item.id] = st.session_state.history_json[item.id]
-                comments_json[item.id] = st.session_state.comments_json[item.id]
-                work_item_json[item.id] = {
-                    "title": item.title,
-                    "description": clean_html(item.description),
-                    "acceptance_criteria": item.acceptance_criteria,
-                    "status": item.status
-                }
-        prompt_text = multiple_history_analysis_template.format(
-            work_items_info=work_item_json,
-            history_json=history_json,
-            comments_json=comments_json
-        )
-        print(f"Prompt Text: {prompt_text}")
-        st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
-        st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
+    cols = st.columns(2)
+    with cols[0]:
+        if st.button("📜 **Run History IA Analysis**", type="primary"):
+            st.toast("IA analysis triggered.")
+            history_json = {}
+            comments_json = {}
+            work_item_json = {}
+            for project in st.session_state["selected_work_items"]:
+                for item in st.session_state["selected_work_items"][project]:
+                    history_json[item.id] = st.session_state.history_json[item.id]
+                    comments_json[item.id] = st.session_state.comments_json[item.id]
+                    work_item_json[item.id] = {
+                        "title": item.title,
+                        "description": clean_html(item.description),
+                        "acceptance_criteria": item.acceptance_criteria,
+                        "status": item.status
+                    }
+            prompt_text = multiple_history_analysis_template.format(
+                work_items_info=work_item_json,
+                history_json=history_json,
+                comments_json=comments_json
+            )
+            print(f"Prompt Text: {prompt_text}")
+            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+            st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
+
+    with cols[1]:
+        if st.button("🧑‍💻 **Run Code IA Analysis**", type="primary"):
+            st.toast("IA analysis triggered.")
+            work_item_json = {}
+            commits_json = {}
+            for project in st.session_state["selected_work_items"]:
+                for item in st.session_state["selected_work_items"][project]:
+                    commits_json[item.id] = st.session_state.commits_json[item.id]
+                    work_item_json[item.id] = {
+                        "title": item.title,
+                        "description": clean_html(item.description),
+                        "acceptance_criteria": item.acceptance_criteria,
+                        "status": item.status
+                    }
+            prompt_text = project_code_analysis_template.format(
+                work_items_info=work_item_json,
+                commits_json=commits_json
+            )
+            print(f"Prompt Text: {prompt_text}")
+            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+            st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
 
 def render_general_tab(alm_tools, project_name):
     st.subheader("Tool Administration")

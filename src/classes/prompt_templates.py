@@ -137,6 +137,45 @@ Return a JSON object with the following keys:
 Ensure your response is clear, well-structured, and provides actionable insights for further development.
 """
 
+project_code_analysis_template = """
+You are a highly skilled Software Architect. Your task is to thoroughly analyze the provided code changes in the context of an Azure DevOps work item. Your goal is to ensure the code aligns with the specified requirements, identify any issues, and suggest actionable improvements.
+
+Provided information:
+- **Work Items:** {work_items_info}
+- **Code Changes:** {diff_data}
+
+Your analysis should include:
+
+1. **Detailed Summary:** Provide a comprehensive summary of the code changes in markdown format, highlighting what was modified, added, or removed.
+2. **Requirements Alignment:** Assess how well the code changes meet the work item requirements and acceptance criteria. Note any gaps, ambiguities, or misalignments.
+3. **Issue Identification:** List any requirements not addressed, ambiguities, defects, or risks found in the code changes.
+4. **Quality Analysis:** Evaluate the code for performance, security, maintainability, and scalability concerns. Highlight any potential issues and their impact.
+5. **Optimizations:** Suggest specific optimizations or refactoring opportunities to improve code quality and project outcomes.
+6. **Improvement Suggestions:** Recommend prioritized improvements or changes, explaining their importance and expected benefits.
+
+**Action Items:**
+- Create a prioritized list of new work items for pending tasks, improvements, or defects. Name this list `pending_items`. Each item should follow this format:
+    {{
+        "title": "Title of the work item",
+        "description": "Detailed description of the work item",
+        "acceptance_criteria": "List of acceptance criteria items"
+    }}
+
+- Create a list of relevant test cases to validate the code changes and requirements. Name this list `test_cases`. Each test case should follow this format:
+    {{
+        "test_case_id": "ID of the test case",
+        "test_case_description": "Detailed description of the test case"
+    }}
+
+**Response Format:**  
+Return a JSON object with the following keys:
+1. `"detailed_analysis"`: The markdown-formatted analysis of the code changes.
+2. `"pending_items"`: The list of work items in JSON format.
+3. `"test_cases"`: The list of test cases in JSON format.
+
+Ensure your response is clear, well-structured, and provides actionable insights for further development.
+"""
+
 class Templates ():
     answer_prompt = ChatPromptTemplate.from_template(answer_template)
     initial_transcription_prompt = ChatPromptTemplate.from_template(initial_transcription_template)
