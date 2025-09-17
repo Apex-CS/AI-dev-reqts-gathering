@@ -281,12 +281,11 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             st.error(f"Error fetching work item comments: {e}")
             return []
         
-    def get_work_item_commits(self, work_item_id):
+    def get_work_item_commits(self, project_name, work_item_id):
         commits = []
         commits_by_id = self.fetch_work_item_commits_by_id(work_item_id)
-        print("Commits by ID:", commits_by_id)
         for commits_iter in commits_by_id.get("commits", []):
-            commit_details = self.get_commit_details(commits_iter.url, commits_iter.url.split('/')[4])
-            print("Commit Details:", commit_details)
-            commits.append(commit_details)
+            commit_details = self.get_commit_details(commits_iter.url, project_name)
+            current_commit = self.get_git_commit_content(commit_details.remote_url, project_name, commit_details.repository_id)
+            commits.append(current_commit)
         return commits

@@ -47,6 +47,7 @@ DEFAULT_SESSION_STATE = {
     "history_json": {},
     "comments_json": {},
     "history_response": {},
+    ""
     "doc_added": False,
 }
 
@@ -260,10 +261,10 @@ def common_sidebar():
                     for item in work_items:
                         st.session_state.history_json[item.id] = []
                         st.session_state.comments_json[item.id] = []
+                        st.session_state.commits_json[item.id] = []
                         work_item_history = alm_tool.get_work_item_history(item.id)
                         work_item_comments = alm_tool.get_work_item_comments(project_rqm['tool_name'], item.id)
-                        work_item_commits = alm_tool.get_work_item_commits(item.id)
-                        print("work_item_commits", work_item_commits)
+                        work_item_commits = alm_tool.get_work_item_commits(project_rqm['tool_name'], item.id)
                         if not work_item_history:
                             return
                         for entry in work_item_history:
@@ -274,6 +275,10 @@ def common_sidebar():
                         for comment in work_item_comments:
                             st.session_state.comments_json[item.id].append(
                                 comment.to_dict()
+                            )
+                        for commit in work_item_commits:
+                            st.session_state.commits_json[item.id].append(
+                                commit
                             )
                     st.session_state["project_config"][project_rqm['tool_name']] = {
                         "alm_tool": alm_tool,

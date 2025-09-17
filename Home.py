@@ -53,6 +53,7 @@ DEFAULT_SESSION_STATE = {
     "comments_json": {},
     "commits_json": {},
     "history_response": {},
+    "code_analysis_response": {},
 }
 
 def set_default_session_state():

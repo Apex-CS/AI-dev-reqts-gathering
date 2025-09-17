@@ -142,7 +142,7 @@ You are a highly skilled Software Architect. Your task is to thoroughly analyze 
 
 Provided information:
 - **Work Items:** {work_items_info}
-- **Code Changes:** {diff_data}
+- **Code Changes:** {commits}
 
 Your analysis should include:
 

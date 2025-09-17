@@ -28,3 +28,14 @@ def clean_html(text):
 def get_field(fields, key, default=""):
     value = fields.get(key, default)
     return value.get('displayName', default) if isinstance(value, dict) else value
+
+
+def extract_json_blocks(text):
+    pattern = r'```json\s*([\s\S]*?)\s*```'
+    json_blocks = []
+    for match in re.findall(pattern, text, re.DOTALL):
+        try:
+            json_blocks.append(json.loads(match))
+        except Exception:
+            continue
+    return json_blocks

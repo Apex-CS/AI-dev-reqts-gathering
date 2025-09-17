@@ -79,9 +79,7 @@ def render_info_tab(project_info, alm_tools):
                 history_json=history_json,
                 comments_json=comments_json
             )
-            print(f"Prompt Text: {prompt_text}")
             st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
-            st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
 
     with cols[1]:
         if st.button("🧑‍💻 **Run Code IA Analysis**", type="primary"):
@@ -99,11 +97,51 @@ def render_info_tab(project_info, alm_tools):
                     }
             prompt_text = project_code_analysis_template.format(
                 work_items_info=work_item_json,
-                commits_json=commits_json
+                commits=commits_json
             )
-            print(f"Prompt Text: {prompt_text}")
-            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
-            st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
+            st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+    
+    if "project_name" in project_info and project_info.get("project_name") in st.session_state.history_response:
+        st.header(f"History Analysis for Project {project_info.get('project_name')}")
+        st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
+    if "project_name" in project_info and project_info.get("project_name") in st.session_state.code_analysis_response:
+        st.header(f"Code Analysis for Project {project_info.get('project_name')}")
+        st.markdown(st.session_state.code_analysis_response[project_info.get("project_name")].content)
+
+        json_blocks = utility_functions.extract_json_blocks(st.session_state.code_analysis_response[project_info.get("project_name")].content)
+        
+        if json_blocks:
+            st.markdown(json_blocks[0].get("detailed_analysis", ""))
+            st.session_state["new_work_items"] = json_blocks[0].get("pending_items", [])
+            st.session_state["new_test_cases"] = json_blocks[0].get("test_cases", [])
+
+            st.header("New Test Cases")
+            for idx, test_case in enumerate(st.session_state.get("new_test_cases", []), 1):
+                st.write(f"**Test Case {idx}:**")
+                st.write(f"**ID:** {test_case.get('test_case_id', 'N/A')}")
+                st.write(f"**Description:** {test_case.get('test_case_description', 'N/A')}")
+                if st.button(f"🧪 Create Test Case {idx}", key=f"create_test_case_{idx}", type="primary"):
+                    # Implement logic to create the test case in ADO
+                    st.success(f"Test Case {idx} created successfully.")
+
+            st.header("New Work Items")
+            for idx, new_work in enumerate(st.session_state.get("new_work_items", []), 1):
+                new_work_item = NewWorkItem.from_dict(new_work)
+                st.write(f"**Work Item {idx}:**")
+                st.write(f"**New Title:** {new_work_item.new_title}")
+                st.write(f"**New Description:** {new_work_item.new_description}")
+                st.write(f"**New Acceptance Criteria:** {', '.join(new_work_item.new_acceptance_criteria)}")
+                if st.button(f"📝 Create Work Item {idx}", key=f"create_work_item_{idx}", type="primary"):
+                    response = connector.add_work_item(
+                    new_work_item.new_title,
+                    new_work_item.new_description,
+                    ', '.join(new_work_item.new_acceptance_criteria),
+                    project_name
+                    )
+                    if response:
+                        st.success(f"Work Item {idx} created successfully with ID: {response.id}")
+                    else:
+                        st.error("Failed to create work item.")
 
 def render_general_tab(alm_tools, project_name):
     st.subheader("Tool Administration")

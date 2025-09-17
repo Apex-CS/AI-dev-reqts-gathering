@@ -11,7 +11,6 @@ from src.functions.helpers import (
 )
 
 
-
 def render_work_item_form(work_item, work_item_id):
     st.subheader(f"**Story Navigator, Work Item ID:** {work_item_id or 'Not provided'}")
 
