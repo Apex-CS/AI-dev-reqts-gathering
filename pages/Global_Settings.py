@@ -75,7 +75,8 @@ def render():
                     save_project_details(
                         db_path=utility_functions.SETTINGS_DB,
                         project_name=new_tool_project,
-                        project_description=new_tool_project_description
+                        project_description=new_tool_project_description,
+                        project_summary=""
                     )
                     st.session_state["load_tree"] = True
                     st.toast("Project added successfully.")
@@ -109,7 +110,8 @@ def render():
                                 db_path=utility_functions.SETTINGS_DB,
                                 project_name=project['project_name'],
                                 new_title=new_title,
-                                new_description=new_description
+                                new_description=new_description,
+                                new_summary=project['project_summary']
                             )
                             st.toast("Project description updated successfully.")
                             st.session_state["load_tree"] = True

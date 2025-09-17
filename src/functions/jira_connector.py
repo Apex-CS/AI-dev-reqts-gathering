@@ -129,7 +129,6 @@ class JiraConnector(src.interfaces.connector.ConnectorInterface):
                 return None
             issue = jira.issue(work_item_id)
             work_item_obj = work_item.WorkItem.from_jira_issue(issue)
-            print("issue", issue)
             remote_links = jira.remote_links(issue)
             commits_list = []
             for link in remote_links:

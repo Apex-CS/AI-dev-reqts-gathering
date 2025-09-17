@@ -64,3 +64,7 @@ class ConnectorInterface(ABC):
     @abstractmethod
     def get_work_item_history(self, work_item_id):
         pass
+    
+    @abstractmethod
+    def get_work_item_comments(self, project_name, work_item_id):
+        pass

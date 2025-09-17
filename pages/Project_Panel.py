@@ -60,13 +60,24 @@ def render_info_tab(project_info, alm_tools):
     if st.button("🤖 **Run History IA Analysis**", type="primary"):
         st.toast("IA analysis triggered.")
         history_json = {}
+        comments_json = {}
+        work_item_json = {}
         for project in st.session_state["selected_work_items"]:
             for item in st.session_state["selected_work_items"][project]:
-                history_json[item] = st.session_state.history_json[item]
-                        
+                history_json[item.id] = st.session_state.history_json[item.id]
+                comments_json[item.id] = st.session_state.comments_json[item.id]
+                work_item_json[item.id] = {
+                    "title": item.title,
+                    "description": clean_html(item.description),
+                    "acceptance_criteria": item.acceptance_criteria,
+                    "status": item.status
+                }
         prompt_text = multiple_history_analysis_template.format(
-            history_json=history_json
+            work_items_info=work_item_json,
+            history_json=history_json,
+            comments_json=comments_json
         )
+        print(f"Prompt Text: {prompt_text}")
         st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
         st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
 
@@ -143,7 +154,6 @@ def add_new_tool_form(project_name):
                 pat=new_tool_token,
                 user_email=new_user_email
             )
-            print(f"Tool save result: {rr}")
             st.toast(f"New RQM tool '{new_tool_name}' added successfully.")
 
             st.session_state["load_tree"] = True
@@ -153,7 +163,7 @@ def save_work_items_project(db_path, project, tool_name):
     if tool_name in st.session_state["selected_work_items"]:
         work_items = st.session_state["selected_work_items"][tool_name]
         for item in work_items:
-            save_remove_work_items_project(db_path, project, tool_name, item)
+            save_remove_work_items_project(db_path, project, tool_name, item.id)
         st.toast(f"Work items saved for {tool_name} in project {project}.")
     else:
         st.error(f"No work items selected for {tool_name}.")
@@ -165,13 +175,11 @@ def render_tool_expander(tool):
     url = tool["url"]
     pat = tool["pat"]
     user_email = tool["user_email"]
-    st.write(tool)
 
     # Load selected work items for this tool
     st.session_state["selected_work_items"][tool_name] = get_work_items_project(
         utility_functions.SETTINGS_DB, project, tool_name
     )
-
     with st.expander(
         f"{tool_name} selected: {len(st.session_state['selected_work_items'][tool_name])}",
         expanded=False,
@@ -218,4 +226,4 @@ def render_tool_expander(tool):
                         value=item.id in st.session_state["selected_work_items"][tool_name],
                     )
                     if checked :
-                        st.session_state["selected_work_items"][tool_name].append(item.id)
+                        st.session_state["selected_work_items"][tool_name].append(item)

@@ -23,3 +23,5 @@ class HistoryData:
                 field_obj = entry.fields.get(name)
                 fields[name] = field_obj.__dict__ if field_obj else None
             return HistoryData(fields=fields)
+
+    

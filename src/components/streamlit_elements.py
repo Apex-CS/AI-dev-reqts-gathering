@@ -45,6 +45,7 @@ DEFAULT_SESSION_STATE = {
     "test_item_selector": 0,
     "last_work_item_selector": 0,
     "history_json": {},
+    "comments_json": {},
     "history_response": {},
     "doc_added": False,
 }
@@ -213,6 +214,7 @@ def go_home():
 def go_transcription_import():
     st.session_state["show_home"] = "Transcription_Import"
     st.session_state["leaving_work_item"] = st.session_state["work_item_selector"]
+    st.session_state.doc_added = False
     st.session_state["work_item_selector"] = None
 
 def go_settings():
@@ -253,17 +255,24 @@ def common_sidebar():
                     selected_work_items = get_work_items_project(
                         utility_functions.SETTINGS_DB, project_name, project_rqm['tool_name']
                     )
-                    work_items = alm_tool.fetch_data_by_ids(selected_work_items)
-                    
+                    ids = [item.id for item in selected_work_items if str(item.id).isdigit()]
+                    work_items = alm_tool.fetch_data_by_ids(ids)
                     for item in work_items:
-                        print(f"Fetching history for work item {item.id}")
+                        st.session_state.history_json[item.id] = []
+                        st.session_state.comments_json[item.id] = []
                         work_item_history = alm_tool.get_work_item_history(item.id)
+                        work_item_comments = alm_tool.get_work_item_comments(project_rqm['tool_name'], item.id)
                         if not work_item_history:
                             return
                         for entry in work_item_history:
                             if entry and entry.fields:
-                                st.session_state.history_json[item.id] = json.dumps(entry.fields, default=str)
-                    
+                                st.session_state.history_json[item.id].append(
+                                    json.dumps(entry.fields, default=str)
+                                )
+                        for comment in work_item_comments:
+                            st.session_state.comments_json[item.id].append(
+                                comment.to_dict()
+                            )
                     st.session_state["project_config"][project_rqm['tool_name']] = {
                         "alm_tool": alm_tool,
                         "url": project_rqm['url'],
@@ -334,8 +343,6 @@ def common_sidebar():
             work_item_selector = int(work_item_selector)
             work_item = tree_project_items[work_item_selector]["work_item_id"]
             project_name = tree_project_items[work_item_selector]["project"]
-
-            print(  f"Selected work item: {work_item} of type {tree_project_items[work_item_selector]['type']} in project {project_name}"  )
 
             if work_item:
                 if not str(work_item).isdigit() and not tree_project_items[work_item_selector]['type'] == "User Story" and not tree_project_items[work_item_selector]['type'] == "Test Case":

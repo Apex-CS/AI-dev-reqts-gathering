@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS rqm_tool_details (
 # Utility context manager for DB connection
 from contextlib import contextmanager
 import os
+import src.classes.work_item as work_item_module
+WorkItem = work_item_module.WorkItem
 
 @contextmanager
 def db_cursor(db_path):
@@ -105,6 +107,12 @@ def save_rqm_tool_details(db_path, project, tool_type, rqm_type, url, tool_name,
         cursor.execute("""
             INSERT INTO rqm_tool_details (project, tool_type, rqm_type, tool_name, url, pat, user_email)
             VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(project, tool_name) DO UPDATE SET
+            tool_type=excluded.tool_type,
+            rqm_type=excluded.rqm_type,
+            url=excluded.url,
+            pat=excluded.pat,
+            user_email=excluded.user_email
         """, (project, tool_type, rqm_type, tool_name, url, pat, user_email))
 
 def get_all_rqm_tool_details(db_path, project_name):
@@ -143,9 +151,9 @@ def get_work_items_project(db_path, project_name, rqm_name):
             CREATE TABLE IF NOT EXISTS work_items (id INTEGER PRIMARY KEY, project_name TEXT, rqm_name TEXT, work_item_id INTEGER)
         """)
         cursor.execute("""
-            SELECT work_item_id FROM work_items WHERE project_name = ? AND rqm_name = ?
+            SELECT id, project_name, rqm_name, work_item_id FROM work_items WHERE project_name = ? AND rqm_name = ?
         """, (project_name, rqm_name))
-        return [row[0] for row in cursor.fetchall()]
+        return [WorkItem(*row) for row in cursor.fetchall()]
     
 def save_remove_work_items_project(db_path, project_name, rqm_name, work_item_id):
     with db_cursor(db_path) as cursor:

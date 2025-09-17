@@ -163,7 +163,7 @@ def handle_user_input():
         add_message("assistant", response.content)
         get_session_history("global").add_message(response)
         render_messages(st.session_state.messages)
-    if st.button("Export Chat to PDF"):
+    if st.button("📄 Export Chat to PDF", type="primary"):
         pdf_output = export_chat_to_pdf(st.session_state.messages)
         st.download_button(
             label="Download Chat as PDF",
@@ -200,7 +200,8 @@ def handle_user_input():
         doc_bytes.seek(0)
         st.download_button(
         label="Download Summary as Word Document",
-        data=doc_bytes,
+        data=doc_bytes, 
+        type="primary",
         file_name="document_summary.docx",
         mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         )
@@ -235,7 +236,6 @@ def handle_user_input():
                 project_summary=st.session_state.summary
             )
             conn_info = st.session_state.connection_ado_default
-            print("Connection Info:", conn_info)
             save_rqm_tool_details(
                 db_path=utility_functions.SETTINGS_DB,
                 project=project_name,
@@ -252,11 +252,10 @@ def handle_user_input():
                 description = story.get("description", "")
                 acceptance_criteria = "\n".join([f"- {ac}" for ac in story.get("acceptance_criteria", [])])
                 last_item = connector.add_work_item(title, description, acceptance_criteria, conn_info["project_name"])
-                print("Last added work item:", last_item)
                 save_remove_work_items_project(
                     db_path=utility_functions.SETTINGS_DB,
                     project_name=project_name,
-                    rqm_name=conn_info["tool_name"],
+                    rqm_name=conn_info["project_name"],
                     work_item_id=last_item.id
                 )
 

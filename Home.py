@@ -50,6 +50,7 @@ DEFAULT_SESSION_STATE = {
     "incorporate_from_test_gen": "",
     "selected_tab_index": 0,
     "history_json": {},
+    "comments_json": {},
     "history_response": {},
 }
 
@@ -160,7 +161,7 @@ def planningverse_work_flow():
     st.session_state["selected_tab_index"] = 0
     if not isinstance(work_item_id, list):
         render_tabs(
-            ["Historial Analysis", "Code Analysis"],
+            ["Interactions Analysis", "Code Analysis"],
             [history_analysis.render, code_analysis.render],
             tab_type="requirement"
         )

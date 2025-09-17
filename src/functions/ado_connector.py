@@ -2,7 +2,7 @@ from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 import streamlit as st
 import json
-from src.classes import work_item, common_data, commits, history_data
+from src.classes import work_item, common_data, commits, history_data, comment_data
 
 import src.interfaces.connector
 
@@ -99,7 +99,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                 {"op": "add", "path": "/fields/System.Title", "value": title},
                 {"op": "add", "path": "/fields/System.Description", "value": description},
                 {"op": "add", "path": "/fields/Microsoft.VSTS.Common.AcceptanceCriteria", "value": acceptance_criteria or ''},
-                {"op": "add", "path": "/fields/System.Tags", "value": "Qualiverse AI Created"}
+                {"op": "add", "path": "/fields/System.Tags", "value": "AI Created"}
             ]
             return wit_client.create_work_item(patch_document, project_name, 'Task')
         except Exception as e:
@@ -149,7 +149,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             patch.append({
                 "op": "add",
                 "path": "/fields/System.Tags",
-                "value": "Qualiverse AI Improved"
+                "value": "AI Improved"
             })
             if patch:
                 wit_client.update_work_item(patch, work_item_id)
@@ -171,7 +171,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                 patch.append({"op": "add", "path": "/fields/Microsoft.VSTS.TCM.Steps", "value": steps_xml})
             if parameters:
                 patch.append({"op": "add", "path": "/fields/Microsoft.VSTS.TCM.Parameters", "value": parameters})
-            patch.append({"op": "add", "path": "/fields/System.Tags", "value": "Qualiverse AI Improved"})
+            patch.append({"op": "add", "path": "/fields/System.Tags", "value": "AI Improved"})
             if patch:
                 wit_client.update_work_item(patch, work_item_id)
         except Exception as e:
@@ -213,6 +213,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             st.error(f"Error updating work item with test results: {e}")
 
     def get_commit_details(self, commit_url, project_name):
+        repository_id = commit_url.split('%2F')[1]
         try:
             git_client = self.get_git_client()
             if not git_client:
@@ -220,12 +221,12 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             commit_id = commit_url[-40:]
             if not commit_id:
                 return "Selected commit ID not found."
-            commit = git_client.get_commit(commit_id=commit_id, repository_id=project_name, project=project_name)
-            return commits.Commits.from_azure_devops(commit)
+            commit = git_client.get_commit(commit_id=commit_id, repository_id=repository_id, project=project_name)
+            return commits.Commits.from_azure_devops(commit, repository_id)
         except Exception as e:
             return f"Error fetching commit: {e}"
 
-    def get_git_commit_content(self, repo_url, project_name):
+    def get_git_commit_content(self, repo_url, project_name, repository_id):
         try:
             git_client = self.get_git_client()
             if not git_client:
@@ -233,8 +234,8 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             commit_id = repo_url.split('/')[-1]
             if not commit_id:
                 return "Repository ID or Commit ID not found."
-            commit = git_client.get_commit(commit_id=commit_id, repository_id=project_name, project=project_name)
-            changes = git_client.get_changes(commit_id=commit_id, repository_id=project_name, project=project_name)
+            commit = git_client.get_commit(commit_id=commit_id, repository_id=repository_id, project=project_name)
+            changes = git_client.get_changes(commit_id=commit_id, repository_id=repository_id, project=project_name)
             contents = {}
             for change in getattr(changes, 'changes', []):
                 item = getattr(change, 'item', None) or change.get('item')
@@ -242,7 +243,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
                     blob_sha = getattr(item, 'object_id', None) or item.get('objectId')
                     if blob_sha:
                         content_gen = git_client.get_blob_content(
-                            repository_id=project_name, download=True, sha1=blob_sha, project=project_name
+                            repository_id=repository_id, download=True, sha1=blob_sha, project=project_name
                         )
                         content = b"".join(content_gen)
                         if b'\x00' not in content:
@@ -258,11 +259,24 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
     def get_work_item_history(self, work_item_id):
         try:
             wit_client = self.get_wit_client()
-            items = []
             if not wit_client:
                 return []
             history = wit_client.get_updates(work_item_id)
-            return [history_data.HistoryData.from_azure_devops(entry) for entry in history]
+            history_entries = [history_data.HistoryData.from_azure_devops(entry) for entry in history]
+            return history_entries
         except Exception as e:
             st.error(f"Error fetching work item history: {e}")
+            return []
+
+    def get_work_item_comments(self, project_name, work_item_id):
+        try:
+            wit_client = self.get_wit_client()
+            if not wit_client:
+                return []
+            comment = wit_client.get_comments(project_name, work_item_id)
+            comments = getattr(comment, 'comments', [])
+            comment_entries = [comment_data.CommentData.from_azure_devops(comment) for comment in comments]
+            return comment_entries
+        except Exception as e:
+            st.error(f"Error fetching work item comments: {e}")
             return []

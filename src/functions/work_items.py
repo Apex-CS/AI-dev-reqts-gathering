@@ -101,9 +101,9 @@ class NewWorkItem(BaseModel):
     def from_dict(cls, data: dict):
         """Create a NewWorkItem instance from a dictionary."""
         return cls(
-            new_title=data.get("new_title"),
-            new_description=data.get("new_description"),
-            new_acceptance_criteria=data.get("new_acceptance_criteria")
+            new_title=data.get("title"),
+            new_description=data.get("description"),
+            new_acceptance_criteria=data.get("acceptance_criteria")
         )
         
     

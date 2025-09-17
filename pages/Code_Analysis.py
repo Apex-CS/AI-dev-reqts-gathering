@@ -4,40 +4,16 @@ import re
 import difflib
 import json
 
-import src.components.streamlit_elements as st_elems
-import src.functions.helpers as helpers
-from langchain.prompts import PromptTemplate
 from src.functions.work_items import NewWorkItem
-from src.functions.analysis_response import AnalysisResponse
+from src.classes.prompt_templates import code_analysis_template
+from src.functions.helpers import (
+    invoke_with_history
+)
 
-def clean_html(text):
-    if not text:
-        return ""
-    text = re.sub('<[^<]+?>', '', text)
-    return text.replace("</br>", "\n").replace("</li>", "\n")
+
 
 def render_work_item_form(work_item, work_item_id):
     st.subheader(f"**Story Navigator, Work Item ID:** {work_item_id or 'Not provided'}")
-    st.text_input(
-        label="Story Title:",
-        key="story_title",
-        disabled=bool(work_item_id),
-        value=work_item.title,
-    )
-    st.text_area(
-        label="Story Description:",
-        key="story_description",
-        height=136,
-        disabled=bool(work_item_id),
-        value=clean_html(work_item.description),
-    )
-    st.text_area(
-        label="Acceptance Criteria:",
-        key="acceptance_criteria",
-        height=250,
-        disabled=bool(work_item_id),
-        value=clean_html(work_item.acceptance_criteria),
-    )
 
 def get_diff_content(current, previous):
     diff_content = {}
@@ -74,115 +50,18 @@ def extract_json_blocks(text):
             continue
     return json_blocks
 
-def llm_prompt(work_item, diff_data, commit_message=None, detailed_instructions="", template="", response_format=None):
-    prompt = PromptTemplate(
-        input_variables=[
-            "title", "description", "acceptance_criteria",
-            "detailed_instructions", "diff_data", "commit_message"
-        ],
-        response_format=response_format,
-        template=template
-    )
-    model_name = os.environ.get("LLM_MODEL_NAME", "")
-    temperature = os.environ.get("LLM_MODEL_TEMPERATURE", "")
-    llm_config = helpers.LLMModelConfig(model_name=model_name, temperature=temperature)
-    llm_model = helpers.construct_model(llm_config=llm_config)
-    prompt_text = prompt.format(
+def analyse_changes_callback(work_item, diff_data):
+    template = code_analysis_template.format(
         title=work_item.title,
         description=work_item.description,
         acceptance_criteria=work_item.acceptance_criteria,
-        detailed_instructions=detailed_instructions.replace('\n', ' '),
-        diff_data=diff_data,
-        commit_message=commit_message or ""
+        diff_data=diff_data
     )
-    return llm_model.invoke(prompt_text)
-
-def improve_description_callback(work_item, diff_data, commit_message):
-    template = (
-        "Given the following Azure DevOps work item title, description and acceptance criteria, "
-        "analyze the information and the current code changes to ensure alignment with requirements.\n\n"
-        "Title: {title}\n\nCurrent Description: {description}\n\nAcceptance Criteria: {acceptance_criteria}\n"
-        "Commit Message: {commit_message}\n\n"
-        "Code Changes: {diff_data}\n\n"
-        "Please provide a description about the code changes, note any pending work, corner cases, and alignment with requirements.\n\n"
-        "Create a list of new work items for pending work, improvements, or defects named pending_items. Create every element of the list in this format:\n"
-        "```json\n"
-        "{{\n"
-        "    \"new_description\": \"Improved description of the work item\",\n"
-        "    \"new_title\": \"Improved title of the work item\",\n"
-        "    \"new_acceptance_criteria\": \"List of Improved acceptance criteria of the work item\"\n"
-        "}}\n"
-        "```\n"
-        "And append it to the end of the response.\n\n"
-        "Keep improvements relevant to the original context and requirements. "
-        "Ensure the improved description is well-structured and easy to understand.\n"
-        "{detailed_instructions}\n"
-    )
-    improved_description = llm_prompt(
-        work_item, diff_data, commit_message,
-        st.session_state.get("detailed_instructions", ""),
-        template, AnalysisResponse.to_dict
-    )
-    st.session_state["result"] = improved_description
-
-def analyse_changes_callback(work_item, diff_data):
-    template = (
-        "Given the following Azure DevOps work item title, description and acceptance criteria, "
-        "analyze the information and the current code changes to ensure alignment with requirements.\n\n"
-        "Title: {title}\n\nCurrent Description: {description}\n\nAcceptance Criteria: {acceptance_criteria}\n"
-        "Code Changes: {diff_data}\n\n"
-        "Please provide a very detailed description about the code changes, pending work, corner cases, and alignment with requirements.\n\n"
-        "Organize the response in a structured way, and "
-        "prioritize the improvements and defects based on their impact on the project.\n\n "
-        "then create a list of new work items for pending work, improvements, or defects named pending_items. Create every element of the list in this format:\n"
-        "```json\n"
-        "{{\n"
-        "    \"new_description\": \"Improved description of the work item\",\n"
-        "    \"new_title\": \"Improved title of the work item\",\n"
-        "    \"new_acceptance_criteria\": [\"Improved acceptance criteria of the work item\"]\n"
-        "}}\n"
-        "```\n"
-        "And append it to the end of the response.\n\n"
-        "then create a list of missing test cases named test_cases. Create every element of the list in this format:\n"
-        "```json\n"
-        "{{\n"
-        "    \"test_case_id\": \"ID of the test case\",\n"
-        "    \"test_case_description\": \"Description of the test case\"\n"
-        "}}\n"
-        "```\n"
-        "Create a response in the following format:\n"
-        "```json\n"
-        "{{\n"
-        "    \"response\": \"Analysis response text\",\n"
-        "    \"pending_items\": [\n"
-        "        {{\n"
-        "            \"new_description\": \"Improved description of the work item\",\n"
-        "            \"new_title\": \"Improved title of the work item\",\n"
-        "            \"new_acceptance_criteria\": [\"Improved acceptance criteria of the work item\"]\n"
-        "        }}\n"
-        "    ]\n"
-        "    \"test_cases\": [\n"
-        "        {{\n"
-        "            \"test_case_id\": \"ID of the test case\",\n"
-        "            \"test_case_description\": \"Description of the test case\"\n"
-        "        }}\n"
-        "    ]\n"
-        "}}\n"
-        "```\n"
-        "Keep improvements relevant to the original context and requirements. "
-        "Ensure the improved description is well-structured and easy to understand.\n"
-        "{detailed_instructions}\n"
-    )
-    improved_description = llm_prompt(
-        work_item, diff_data, None,
-        st.session_state.get("detailed_instructions", ""),
+    st.session_state["result"] =  invoke_with_history(
         template,
-        {
-            "response": str,
-            "pending_items": list[NewWorkItem]
-        }
+        session_id="global"
     )
-    st.session_state["result"] = improved_description
+    print(f"Analysis Result: {st.session_state['result']}")
 
 def render(type=None):
     work_item_id = st.session_state.get("story_item_selector")
@@ -219,16 +98,16 @@ def render(type=None):
                 st.session_state["commit_loaded"] = idx
 
         for idx, commit_details in commit_details_map.items():
-            current_commit = connector.get_git_commit_content(commit_details.remote_url, project_name)
+            current_commit = connector.get_git_commit_content(commit_details.remote_url, project_name, commit_details.repository_id)
             prev_commit_details = commit_details_map.get(idx + 1)
             if prev_commit_details:
-                prev_commit = connector.get_git_commit_content(prev_commit_details.remote_url, project_name)
+                prev_commit = connector.get_git_commit_content(prev_commit_details.remote_url, project_name, prev_commit_details.repository_id)
                 diff = get_diff_content(current_commit, prev_commit)
                 commit_changes[idx] = {"comment": commit_details.comment, "code": diff}
             else:
                 commit_changes[idx] = {"comment": commit_details.comment, "code": current_commit}
 
-        if st.button("Analyse Changes", key="analyze_changes", disabled=not commit_details_map):
+        if st.button("🧑‍💻 Analyse Changes", key="analyze_changes", disabled=not commit_details_map, type="primary"):
             analyse_changes_callback(work_item, commit_changes)
         
     else:
@@ -238,12 +117,12 @@ def render(type=None):
     commit_obj = commit_details_map.get(loaded_idx)
     if commit_obj:
         st.subheader("Commit Content")
-        current_commit = connector.get_git_commit_content(commit_obj.remote_url, project_name)
+        current_commit = connector.get_git_commit_content(commit_obj.remote_url, project_name, commit_obj.repository_id)
         st.session_state["current_commit_loaded"] = current_commit
 
         prev_commit_obj = commit_details_map.get(loaded_idx + 1)
         if prev_commit_obj:
-            prev_commit = connector.get_git_commit_content(prev_commit_obj.remote_url, project_name)
+            prev_commit = connector.get_git_commit_content(prev_commit_obj.remote_url, project_name, prev_commit_obj.repository_id)
             st.session_state["before_commit_loaded"] = prev_commit
             show_diff(current_commit, prev_commit)
         else:
@@ -251,38 +130,38 @@ def render(type=None):
             show_commit_files(current_commit)
             st.session_state["code_diff"] = list(current_commit.items())
 
-    st.subheader("Analysis Result")
     if st.session_state.get("result"):
+        st.subheader("Analysis Result")
         json_blocks = extract_json_blocks(st.session_state["result"].content)
         if json_blocks:
-            st.markdown(json_blocks[0].get("response", ""))
+            st.markdown(json_blocks[0].get("detailed_analysis", ""))
             st.session_state["new_work_items"] = json_blocks[0].get("pending_items", [])
             st.session_state["new_test_cases"] = json_blocks[0].get("test_cases", [])
 
-    st.header("New Test Cases")
-    for idx, test_case in enumerate(st.session_state.get("new_test_cases", []), 1):
-        st.write(f"**Test Case {idx}:**")
-        st.write(f"**ID:** {test_case.get('test_case_id', 'N/A')}")
-        st.write(f"**Description:** {test_case.get('test_case_description', 'N/A')}")
-        if st.button(f"Create Test Case {idx}", key=f"create_test_case_{idx}"):
-            # Implement logic to create the test case in ADO
-            st.success(f"Test Case {idx} created successfully.")
+        st.header("New Test Cases")
+        for idx, test_case in enumerate(st.session_state.get("new_test_cases", []), 1):
+            st.write(f"**Test Case {idx}:**")
+            st.write(f"**ID:** {test_case.get('test_case_id', 'N/A')}")
+            st.write(f"**Description:** {test_case.get('test_case_description', 'N/A')}")
+            if st.button(f"🧪 Create Test Case {idx}", key=f"create_test_case_{idx}", type="primary"):
+                # Implement logic to create the test case in ADO
+                st.success(f"Test Case {idx} created successfully.")
 
-    st.header("New Work Items")
-    for idx, new_work in enumerate(st.session_state.get("new_work_items", []), 1):
-        new_work_item = NewWorkItem.from_dict(new_work)
-        st.write(f"**Work Item {idx}:**")
-        st.write(f"**New Title:** {new_work_item.new_title}")
-        st.write(f"**New Description:** {new_work_item.new_description}")
-        st.write(f"**New Acceptance Criteria:** {', '.join(new_work_item.new_acceptance_criteria)}")
-        if st.button(f"Create Work Item {idx}", key=f"create_work_item_{idx}"):
-            response = connector.add_work_item(
+        st.header("New Work Items")
+        for idx, new_work in enumerate(st.session_state.get("new_work_items", []), 1):
+            new_work_item = NewWorkItem.from_dict(new_work)
+            st.write(f"**Work Item {idx}:**")
+            st.write(f"**New Title:** {new_work_item.new_title}")
+            st.write(f"**New Description:** {new_work_item.new_description}")
+            st.write(f"**New Acceptance Criteria:** {', '.join(new_work_item.new_acceptance_criteria)}")
+            if st.button(f"📝 Create Work Item {idx}", key=f"create_work_item_{idx}", type="primary"):
+                response = connector.add_work_item(
                 new_work_item.new_title,
                 new_work_item.new_description,
                 ', '.join(new_work_item.new_acceptance_criteria),
                 project_name
-            )
-            if response:
-                st.success(f"Work Item {idx} created successfully with ID: {response.id}")
-            else:
-                st.error("Failed to create work item.")
+                )
+                if response:
+                    st.success(f"Work Item {idx} created successfully with ID: {response.id}")
+                else:
+                    st.error("Failed to create work item.")
