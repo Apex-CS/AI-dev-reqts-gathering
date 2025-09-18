@@ -80,7 +80,8 @@ def render_info_tab(project_info, alm_tools):
                 history_json=history_json,
                 comments_json=comments_json
             )
-            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+            print(prompt_text)
+            #st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
 
     with cols[1]:
         if st.button("🧑‍💻 **Run Code IA Analysis**", type="primary"):

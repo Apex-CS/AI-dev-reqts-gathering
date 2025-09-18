@@ -285,7 +285,10 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
         commits = []
         commits_by_id = self.fetch_work_item_commits_by_id(work_item_id)
         for commits_iter in commits_by_id.get("commits", []):
-            commit_details = self.get_commit_details(commits_iter.url, project_name)
-            current_commit = self.get_git_commit_content(commit_details.remote_url, project_name, commit_details.repository_id)
-            commits.append(current_commit)
+            try:
+                commit_details = self.get_commit_details(commits_iter.url, project_name)
+                current_commit = self.get_git_commit_content(commit_details.remote_url, project_name, commit_details.repository_id)
+                commits.append(current_commit)
+            except Exception as e:
+                print(f"Error fetching commit for work item: {e}")
         return commits

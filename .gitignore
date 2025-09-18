@@ -5,3 +5,22 @@
 **/__pycache__/
 **/*.pyc
 
+pages/__pycache__/Code_Analysis.cpython-312.pyc
+pages/__pycache__/Global_Settings.cpython-312.pyc
+pages/__pycache__/History_Analysis.cpython-312.pyc
+pages/__pycache__/Project_Panel.cpython-312.pyc
+pages/__pycache__/Transcript_tool.cpython-312.pyc
+src/classes/__pycache__/commits.cpython-312.pyc
+src/classes/__pycache__/common_data.cpython-312.pyc
+src/classes/__pycache__/history_data.cpython-312.pyc
+src/classes/__pycache__/prompt_templates.cpython-312.pyc
+src/classes/__pycache__/work_item.cpython-312.pyc
+src/components/__pycache__/streamlit_elements.cpython-312.pyc
+src/functions/__pycache__/ado_connector.cpython-312.pyc
+src/functions/__pycache__/helpers.cpython-312.pyc
+src/functions/__pycache__/jira_connector.cpython-312.pyc
+src/functions/__pycache__/settings.cpython-312.pyc
+src/functions/__pycache__/utility_functions.cpython-312.pyc
+src/functions/__pycache__/work_items.cpython-312.pyc
+src/interfaces/__pycache__/connector.cpython-312.pyc
+pages/__pycache__/Code_Analysis.cpython-312.pyc
