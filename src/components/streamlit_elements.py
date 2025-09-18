@@ -269,12 +269,14 @@ def common_sidebar():
                             return
                         for entry in work_item_history:
                             if entry and entry.fields:
+                                new_data = utility_functions.clean_json_null_values(entry.fields)
                                 st.session_state.history_json[item.id].append(
-                                    json.dumps(entry.fields, default=str)
+                                    new_data
                                 )
                         for comment in work_item_comments:
+                            new_data = utility_functions.clean_json_null_values(comment.to_dict())
                             st.session_state.comments_json[item.id].append(
-                                comment.to_dict()
+                                new_data
                             )
                         for commit in work_item_commits:
                             st.session_state.commits_json[item.id].append(

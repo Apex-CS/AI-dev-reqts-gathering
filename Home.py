@@ -39,6 +39,7 @@ DEFAULT_SESSION_STATE = {
     "current_page": "Home",
     "alm_project_connector": {},
     "detailed_instructions": "",
+    "messages": [],
     "chat_history": {},
     "current_project": "",
     "analysis_completed": False,

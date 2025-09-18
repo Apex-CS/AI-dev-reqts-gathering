@@ -52,7 +52,7 @@ def render(type=None):
     # --- General Settings Tab ---
     with tab_general:
         render_general_tab(alm_tools, project_name)
-
+        
 def render_info_tab(project_info, alm_tools):
     st.write("### Current Description")
     st.write(project_info.get("project_description", "No description available."))
@@ -72,7 +72,7 @@ def render_info_tab(project_info, alm_tools):
                     work_item_json[item.id] = {
                         "title": item.title,
                         "description": clean_html(item.description),
-                        "acceptance_criteria": item.acceptance_criteria,
+                        "acceptance_criteria": clean_html(item.acceptance_criteria),
                         "status": item.status
                     }
             prompt_text = multiple_history_analysis_template.format(
@@ -107,11 +107,7 @@ def render_info_tab(project_info, alm_tools):
         st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.code_analysis_response:
         st.header(f"Code Analysis for Project {project_info.get('project_name')}")
-        print(st.session_state.code_analysis_response[project_info.get("project_name")].content)
-
         json_blocks = utility_functions.extract_json_blocks(st.session_state.code_analysis_response[project_info.get("project_name")].content)
-        print(json_blocks)
-        
         if json_blocks:
             st.markdown(json_blocks[0].get("detailed_analysis", ""))
             st.session_state["new_work_items"] = json_blocks[0].get("pending_items", [])

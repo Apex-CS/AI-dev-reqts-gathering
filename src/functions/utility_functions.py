@@ -41,3 +41,16 @@ def extract_json_blocks(text):
         except Exception:
             continue
     return json_blocks
+
+ignored_fields = ['id', '_links', 'avatar', 'descriptor', 'uniqueName', 'href']
+
+
+def clean_json_null_values(data):
+    if isinstance(data, dict) and not data == {}:
+        return {k: clean_json_null_values(v) for k, v in data.items() if v is not None and v != {} and v != [] and v != "" and (not (isinstance(v, str) and "https://" in v)) and k not in ignored_fields}
+    elif isinstance(data, list) and not data == []:
+        return [clean_json_null_values(item) for item in data if item is not None and item != {} and item != [] and item != "" and (not (isinstance(item, str) and "https://" in item)) and item not in ignored_fields]
+    elif isinstance(data, str) and not data == "" and (not (isinstance(data, str) and "https://" in data)):
+        return clean_html(data)
+    else:
+        return data

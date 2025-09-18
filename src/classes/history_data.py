@@ -9,11 +9,8 @@ class HistoryData:
     @staticmethod
     def from_azure_devops(entry):
         field_names = [
-            'System.Id', 'System.AreaId', 'System.NodeName', 'System.AreaLevel1', 'System.Rev',
-            'System.IterationLevel1',
             'System.WorkItemType', 'System.State', 'System.Reason', 'System.AssignedTo', 'System.CreatedDate',
-            'System.CreatedBy', 'System.ChangedDate', 'System.ChangedBy', 'System.AuthorizedAs', 
-            'System.IsDeleted', 'System.CommentCount', 'System.TeamProject', 'System.AreaPath',
+            'System.AreaPath',
             'System.IterationPath', 'Microsoft.VSTS.Common.StateChangeDate', 'System.Title', 'System.Description',
             'Microsoft.VSTS.Common.AcceptanceCriteria', 'System.Tags'
         ]
