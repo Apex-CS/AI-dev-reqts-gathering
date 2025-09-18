@@ -1,6 +1,7 @@
 import os
 import streamlit as st
 import re
+from src.functions.work_items import NewWorkItem
 
 from src.functions.helpers import (
     invoke_with_history
@@ -106,9 +107,10 @@ def render_info_tab(project_info, alm_tools):
         st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.code_analysis_response:
         st.header(f"Code Analysis for Project {project_info.get('project_name')}")
-        st.markdown(st.session_state.code_analysis_response[project_info.get("project_name")].content)
+        print(st.session_state.code_analysis_response[project_info.get("project_name")].content)
 
         json_blocks = utility_functions.extract_json_blocks(st.session_state.code_analysis_response[project_info.get("project_name")].content)
+        print(json_blocks)
         
         if json_blocks:
             st.markdown(json_blocks[0].get("detailed_analysis", ""))
@@ -125,6 +127,7 @@ def render_info_tab(project_info, alm_tools):
                     st.success(f"Test Case {idx} created successfully.")
 
             st.header("New Work Items")
+            connector = st.session_state["current_connector"]
             for idx, new_work in enumerate(st.session_state.get("new_work_items", []), 1):
                 new_work_item = NewWorkItem.from_dict(new_work)
                 st.write(f"**Work Item {idx}:**")
@@ -136,7 +139,7 @@ def render_info_tab(project_info, alm_tools):
                     new_work_item.new_title,
                     new_work_item.new_description,
                     ', '.join(new_work_item.new_acceptance_criteria),
-                    project_name
+                    project_info.get("project_name")
                     )
                     if response:
                         st.success(f"Work Item {idx} created successfully with ID: {response.id}")

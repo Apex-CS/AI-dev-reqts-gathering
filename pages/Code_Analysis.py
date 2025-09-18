@@ -60,7 +60,6 @@ def analyse_changes_callback(work_item, diff_data):
         template,
         session_id="global"
     )
-    print(f"Analysis Result: {st.session_state['result']}")
 
 def render(type=None):
     work_item_id = st.session_state.get("story_item_selector")

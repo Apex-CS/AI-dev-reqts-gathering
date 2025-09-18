@@ -1,5 +1,6 @@
 import streamlit as st
 import re
+import json
 
 import src.components.streamlit_elements as st_elems
 
@@ -34,6 +35,7 @@ def extract_json_blocks(text):
     pattern = r'```json\s*([\s\S]*?)\s*```'
     json_blocks = []
     for match in re.findall(pattern, text, re.DOTALL):
+        print(match)
         try:
             json_blocks.append(json.loads(match))
         except Exception:

@@ -153,6 +153,12 @@ Your analysis should include:
 5. **Optimizations:** Suggest specific optimizations or refactoring opportunities to improve code quality and project outcomes.
 6. **Improvement Suggestions:** Recommend prioritized improvements or changes, explaining their importance and expected benefits.
 
+**Response Format:**  
+Return a JSON object with the following keys:
+1. `"detailed_analysis"`: The markdown-formatted analysis of the code changes.
+2. `"pending_items"`: The list of work items in JSON format.
+3. `"test_cases"`: The list of test cases in JSON format.
+
 **Action Items:**
 - Create a prioritized list of new work items for pending tasks, improvements, or defects. Name this list `pending_items`. Each item should follow this format:
     {{
@@ -167,11 +173,6 @@ Your analysis should include:
         "test_case_description": "Detailed description of the test case"
     }}
 
-**Response Format:**  
-Return a JSON object with the following keys:
-1. `"detailed_analysis"`: The markdown-formatted analysis of the code changes.
-2. `"pending_items"`: The list of work items in JSON format.
-3. `"test_cases"`: The list of test cases in JSON format.
 
 Ensure your response is clear, well-structured, and provides actionable insights for further development.
 """
