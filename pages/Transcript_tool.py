@@ -41,7 +41,6 @@ DEFAULT_SESSION_STATE = {
         "tool_name": "ADO",
         "user_email": "",
         "project_name": "SDLC Demo",
-
     },
     "filename": "",
 }
@@ -240,14 +239,19 @@ def handle_user_input():
             save_rqm_tool_details(
                 db_path=utility_functions.SETTINGS_DB,
                 project=project_name,
-                tool_type=conn_info["tool_name"],
-                rqm_type=conn_info["tool_type"],
-                url=conn_info["base_url"],
-                tool_name=conn_info["project_name"],
-                pat=conn_info["personal_access_token"],
-                user_email=conn_info["user_email"]
+                tool_type=st.session_state.connection_ado_default["tool_name"],
+                rqm_type=st.session_state.connection_ado_default["tool_type"],
+                url=st.session_state.connection_ado_default["base_url"],
+                tool_name=st.session_state.connection_ado_default["project_name"],
+                pat=st.session_state.connection_ado_default["personal_access_token"],
+                user_email=st.session_state.connection_ado_default["user_email"]
             )
             connector = ado_connector.AdoConnector()
+            connector.change_connection(
+                st.session_state.connection_ado_default["base_url"],
+                st.session_state.connection_ado_default["project_name"],
+                st.session_state.connection_ado_default["personal_access_token"],
+            )
             for story in st.session_state.user_stories:
                 title = story.get("title", "No Title")
                 description = story.get("description", "")

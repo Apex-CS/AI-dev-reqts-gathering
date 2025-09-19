@@ -12,7 +12,7 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
 
     def change_connection(self, base_url, project_name, personal_access_token, user_email=None):
         try:
-            print("Changing ADO connection...")
+            print("Changing ADO connection...", base_url, project_name)
             self.session_state["connection_ado"] = {
                 "base_url": base_url,
                 "project_name": project_name,

@@ -67,21 +67,18 @@ def render_info_tab(project_info, alm_tools):
             work_item_json = {}
             for project in st.session_state["selected_work_items"]:
                 for item in st.session_state["selected_work_items"][project]:
-                    history_json[item.id] = st.session_state.history_json[item.id]
-                    comments_json[item.id] = st.session_state.comments_json[item.id]
-                    work_item_json[item.id] = {
-                        "title": item.title,
-                        "description": clean_html(item.description),
-                        "acceptance_criteria": clean_html(item.acceptance_criteria),
-                        "status": item.status
-                    }
+                    try:
+                        history_json[item.id] = st.session_state.history_json[item.id]
+                        comments_json[item.id] = st.session_state.comments_json[item.id]
+                        work_item_json[item.id] = st.session_state.work_items_json[item.id]
+                    except Exception as e:
+                        print(f"Error loading data for item {item.id}: {e}")
             prompt_text = multiple_history_analysis_template.format(
                 work_items_info=work_item_json,
                 history_json=history_json,
                 comments_json=comments_json
             )
-            print(prompt_text)
-            #st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
 
     with cols[1]:
         if st.button("🧑‍💻 **Run Code IA Analysis**", type="primary"):
@@ -101,7 +98,7 @@ def render_info_tab(project_info, alm_tools):
                 work_items_info=work_item_json,
                 commits=commits_json
             )
-            st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, "global")
+            st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
     
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.history_response:
         st.header(f"History Analysis for Project {project_info.get('project_name')}")
@@ -230,6 +227,17 @@ def save_work_items_project(db_path, project, tool_name):
     else:
         st.error(f"No work items selected for {tool_name}.")
     st.session_state["load_tree"] = True
+    
+def save_all_work_items_project(db_path, project, tool_name):
+    """if tool_name in st.session_state["project_config"]:
+        work_items = st.session_state["project_config"][tool_name].get("work_items", [])
+        for item in work_items:
+            save_remove_work_items_project(db_path, project, tool_name, item.id)
+        st.toast(f"All work items saved for {tool_name} in project {project}.")
+    else:
+        st.error(f"No work items found for {tool_name}.")
+    st.session_state["load_tree"] = True"""
+    
 
 def render_tool_expander(tool):
     tool_name = tool["tool_name"]
@@ -277,7 +285,13 @@ def render_tool_expander(tool):
                 "work_items": work_items,
                 "user_email": user_email
             }
-
+        st.button(
+            "Add all Project Items",
+            key=f"save_all_work_items_{tool_name}",
+            on_click=save_all_work_items_project,
+            args=(utility_functions.SETTINGS_DB, project, tool_name),
+            icon="💾",
+        )
         if work_items:
             st.write(f"Total Work Items Fetched: {len(work_items)}")
             for item in work_items:

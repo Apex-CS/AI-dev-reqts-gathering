@@ -9,6 +9,8 @@ from src.functions.settings import (
     get_all_rqm_tool_details,
     get_projects_details,
     get_work_items_project,
+    get_rqm_data,
+    save_rqm_data
 )
 
 import src.functions.ado_connector as ado_connector
@@ -46,8 +48,9 @@ DEFAULT_SESSION_STATE = {
     "last_work_item_selector": 0,
     "history_json": {},
     "comments_json": {},
+    "commits_json": {},
+    "work_items_json": {},
     "history_response": {},
-    ""
     "doc_added": False,
 }
 
@@ -256,32 +259,63 @@ def common_sidebar():
                     selected_work_items = get_work_items_project(
                         utility_functions.SETTINGS_DB, project_name, project_rqm['tool_name']
                     )
+                    print("project_name", project_name, "tool_name", project_rqm['tool_name'], "selected_work_items", len(selected_work_items))
                     ids = [item.id for item in selected_work_items if str(item.id).isdigit()]
                     work_items = alm_tool.fetch_data_by_ids(ids)
                     for item in work_items:
-                        st.session_state.history_json[item.id] = []
-                        st.session_state.comments_json[item.id] = []
-                        st.session_state.commits_json[item.id] = []
-                        work_item_history = alm_tool.get_work_item_history(item.id)
-                        work_item_comments = alm_tool.get_work_item_comments(project_rqm['tool_name'], item.id)
-                        work_item_commits = alm_tool.get_work_item_commits(project_rqm['tool_name'], item.id)
-                        if not work_item_history:
-                            return
-                        for entry in work_item_history:
-                            if entry and entry.fields:
-                                new_data = utility_functions.clean_json_null_values(entry.fields)
-                                st.session_state.history_json[item.id].append(
-                                    new_data
+                        item_id = item.id
+                        item.description = utility_functions.clean_html(item.description)
+                        item.acceptance_criteria = utility_functions.clean_html(item.acceptance_criteria)
+                        saved_data = get_rqm_data(
+                            utility_functions.SETTINGS_DB, project_name, item_id
+                        )
+                        if saved_data:
+                            try:
+                                saved_data_json = saved_data
+                                if saved_data_json.get('work_item_history'):
+                                    st.session_state.history_json[item_id] = saved_data_json.get('work_item_history', [])
+                                if saved_data_json.get('work_item_comments'):
+                                    st.session_state.comments_json[item_id] = saved_data_json.get('work_item_comments', [])
+                                if saved_data_json.get('work_item_commits'):
+                                    st.session_state.commits_json[item_id] = saved_data_json.get('work_item_commits', [])
+                                st.session_state.work_items_json[item_id] = [item.to_dict() if hasattr(item, 'to_dict') else vars(item)]
+                            except Exception as e:
+                                print(f"Error loading saved data for item {item_id}, initializing empty data: {e}")
+                                st.session_state.history_json[item_id] = []
+                                st.session_state.comments_json[item_id] = []
+                                st.session_state.commits_json[item_id] = []
+                                st.session_state.work_items_json[item_id] = [item.to_dict() if hasattr(item, 'to_dict') else vars(item)]
+                        else:
+                            print(f"No saved data for item {item_id}, fetching fresh data")
+                            st.session_state.history_json[item_id] = []
+                            st.session_state.comments_json[item_id] = []
+                            st.session_state.commits_json[item_id] = []
+                            st.session_state.work_items_json[item_id] = [item.to_dict() if hasattr(item, 'to_dict') else vars(item)]
+
+                            work_item_history = alm_tool.get_work_item_history(item_id)
+                            work_item_comments = alm_tool.get_work_item_comments(project_rqm['tool_name'], item_id)
+                            work_item_commits = alm_tool.get_work_item_commits(project_rqm['tool_name'], item_id)
+
+                            if work_item_history:
+                                st.session_state.history_json[item_id].extend(
+                                    utility_functions.clean_json_null_values(entry.fields)
+                                    for entry in work_item_history if entry and getattr(entry, 'fields', None)
                                 )
-                        for comment in work_item_comments:
-                            new_data = utility_functions.clean_json_null_values(comment.to_dict())
-                            st.session_state.comments_json[item.id].append(
-                                new_data
+                            st.session_state.comments_json[item_id].extend(
+                                utility_functions.clean_json_null_values(comment.to_dict())
+                                for comment in work_item_comments if hasattr(comment, 'to_dict')
                             )
-                        for commit in work_item_commits:
-                            st.session_state.commits_json[item.id].append(
-                                commit
+                            st.session_state.commits_json[item_id].extend(work_item_commits)
+                            print(f"Fetched {len(st.session_state.history_json[item_id])} history entries, {len(st.session_state.comments_json[item_id])} comments, and {len(st.session_state.commits_json[item_id])} commits for item {item_id}")
+                            save_rqm_data(
+                                utility_functions.SETTINGS_DB,
+                                project_name,
+                                item_id,
+                                work_item_history=str(st.session_state.history_json[item_id]),
+                                work_item_comments=str(st.session_state.comments_json[item_id]),
+                                work_item_commits=str(st.session_state.commits_json[item_id]),
                             )
+                        
                     st.session_state["project_config"][project_rqm['tool_name']] = {
                         "alm_tool": alm_tool,
                         "url": project_rqm['url'],

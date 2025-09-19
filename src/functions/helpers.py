@@ -57,7 +57,7 @@ MODEL_OPTIONS = list(AZURE_OPENAI_MODELS)
 _store: Dict[str, InMemoryChatMessageHistory] = {}
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
-    return _store.setdefault(session_id, InMemoryChatMessageHistory())
+    return InMemoryChatMessageHistory()
 
 # --- Model Construction ---
 

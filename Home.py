@@ -53,8 +53,16 @@ DEFAULT_SESSION_STATE = {
     "history_json": {},
     "comments_json": {},
     "commits_json": {},
+    "work_items_json": {},
     "history_response": {},
     "code_analysis_response": {},
+    "connection_ado_default": {
+        "base_url": "https://dev.azure.com/anflores",
+        "tool_type": "Requirements Management",
+        "tool_name": "ADO",
+        "user_email": "",
+        "project_name": "SDLC Demo",
+    },
 }
 
 def set_default_session_state():

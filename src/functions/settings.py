@@ -31,6 +31,20 @@ CREATE TABLE IF NOT EXISTS rqm_tool_details (
 )
 """
 
+RQM_ITEM_DATA_TABLE = """
+CREATE TABLE IF NOT EXISTS rqm_item_data (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project TEXT,
+    item_id INTEGER,
+    work_item_history TEXT,
+    work_item_comments TEXT,
+    work_item_commits TEXT,
+    UNIQUE(project, item_id)
+)
+"""
+    
+    
+
 # Utility context manager for DB connection
 from contextlib import contextmanager
 import os
@@ -177,3 +191,34 @@ def save_remove_work_items_project(db_path, project_name, rqm_name, work_item_id
             INSERT INTO work_items (project_name, work_item_id, rqm_name)
             VALUES (?, ?, ?)
             """, (project_name, work_item_id, rqm_name))
+            
+            
+def get_rqm_data(db_path, project_name, item_id):
+    with db_cursor(db_path) as cursor:
+        cursor.execute(RQM_ITEM_DATA_TABLE)
+        cursor.execute("""
+            SELECT work_item_history, work_item_comments, work_item_commits 
+            FROM rqm_item_data 
+            WHERE project = ? AND item_id = ?
+        """, (project_name, item_id))
+        result = cursor.fetchone()
+        if result:
+            return {
+                "work_item_history": result[0],
+                "work_item_comments": result[1],
+                "work_item_commits": result[2]
+            }
+        else:
+            return None
+        
+def save_rqm_data(db_path, project_name, item_id, work_item_history, work_item_comments, work_item_commits):
+    with db_cursor(db_path) as cursor:
+        cursor.execute(RQM_ITEM_DATA_TABLE)
+        cursor.execute("""
+            INSERT INTO rqm_item_data (project, item_id, work_item_history, work_item_comments, work_item_commits)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(project, item_id) DO UPDATE SET
+            work_item_history=excluded.work_item_history,
+            work_item_comments=excluded.work_item_comments,
+            work_item_commits=excluded.work_item_commits
+        """, (project_name, item_id, work_item_history, work_item_comments, work_item_commits))
