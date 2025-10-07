@@ -5,6 +5,7 @@ import src.components.streamlit_elements as st_elems
 import src.functions.helpers as helpers
 
 import pages.Code_Analysis as code_analysis
+import pages.Repository_Analysis as repo_analysis
 import pages.History_Analysis as history_analysis
 import pages.Project_Panel as project_panel
 import pages.Global_Settings as global_settings
@@ -61,7 +62,7 @@ DEFAULT_SESSION_STATE = {
         "tool_type": "Requirements Management",
         "tool_name": "ADO",
         "user_email": "",
-        "project_name": "SDLC Demo",
+        "project_name": "AI Requirements Gathering",
     },
 }
 
@@ -188,6 +189,8 @@ def main():
         home()
     elif show_home == "Transcription_Import":
         transcript_tool.render()
+    elif show_home == "Repo_Analysis":
+        repo_analysis.render()
     elif show_home == "Settings":
         project_panel.render()
     elif show_home == "Info":

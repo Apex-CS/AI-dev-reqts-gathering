@@ -130,7 +130,10 @@ def render(type=None):
 
     if st.session_state.get("result"):
         st.subheader("Analysis Result")
-        json_blocks = extract_json_blocks(st.session_state["result"].content)
+
+        result_content = getattr(st.session_state["result"], "content", None)
+        json_blocks = extract_json_blocks(result_content if result_content else str(st.session_state["result"]))
+            
         if json_blocks:
             st.markdown(json_blocks[0].get("detailed_analysis", ""))
             st.session_state["new_work_items"] = json_blocks[0].get("pending_items", [])
@@ -151,12 +154,12 @@ def render(type=None):
             st.write(f"**Work Item {idx}:**")
             st.write(f"**New Title:** {new_work_item.new_title}")
             st.write(f"**New Description:** {new_work_item.new_description}")
-            st.write(f"**New Acceptance Criteria:** {', '.join(new_work_item.new_acceptance_criteria)}")
+            st.write(f"**New Acceptance Criteria:** {new_work_item.new_acceptance_criteria}")
             if st.button(f"📝 Create Work Item {idx}", key=f"create_work_item_{idx}", type="primary"):
                 response = connector.add_work_item(
                 new_work_item.new_title,
                 new_work_item.new_description,
-                ', '.join(new_work_item.new_acceptance_criteria),
+                new_work_item.new_acceptance_criteria,
                 project_name
                 )
                 if response:

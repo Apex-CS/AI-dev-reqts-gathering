@@ -60,13 +60,13 @@ def render_info_tab(project_info, alm_tools):
         st.markdown(project_info.get("project_summary", "No summary available."))
     cols = st.columns(2)
     with cols[0]:
-        if st.button("📜 **Run History IA Analysis**", type="primary"):
-            st.toast("IA analysis triggered.")
+        if st.button("📜 **Run History AI Analysis**", type="primary"):
+            st.toast("AI analysis triggered.")
             history_json = {}
             comments_json = {}
             work_item_json = {}
             for project in st.session_state["selected_work_items"]:
-                for item in st.session_state["selected_work_items"][project]:
+                for item in st.session_state["selected_work_items"][project][:100]:
                     try:
                         history_json[item.id] = st.session_state.history_json[item.id]
                         comments_json[item.id] = st.session_state.comments_json[item.id]
@@ -74,15 +74,18 @@ def render_info_tab(project_info, alm_tools):
                     except Exception as e:
                         print(f"Error loading data for item {item.id}: {e}")
             prompt_text = multiple_history_analysis_template.format(
-                work_items_info=work_item_json,
-                history_json=history_json,
-                comments_json=comments_json
+                work_items_info=str(work_item_json),
+                history_json="",#str(history_json).replace("{},", "").replace("\\'", "").replace("&quot;", " ").replace("{}", "").replace("&nbsp;", " "),
+                comments_json=str(comments_json)
             )
+            #print(str(comments_json))
+            with open("/workspaces/AI-dev-reqts-gathering/prompt_text.txt", "w") as f:
+                f.write(prompt_text)
             st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
 
     with cols[1]:
-        if st.button("🧑‍💻 **Run Code IA Analysis**", type="primary"):
-            st.toast("IA analysis triggered.")
+        if st.button("🧑‍💻 **Run Code AI Analysis**", type="primary"):
+            st.toast("AI analysis triggered.")
             work_item_json = {}
             commits_json = {}
             for project in st.session_state["selected_work_items"]:
@@ -102,10 +105,18 @@ def render_info_tab(project_info, alm_tools):
     
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.history_response:
         st.header(f"History Analysis for Project {project_info.get('project_name')}")
-        st.markdown(st.session_state.history_response[project_info.get("project_name")].content)
+        
+        response = st.session_state.history_response.get(project_info.get("project_name"))
+        content = getattr(response, "content", None)
+        st.markdown(content if content else str(response))
+            
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.code_analysis_response:
-        st.header(f"Code Analysis for Project {project_info.get('project_name')}")
-        json_blocks = utility_functions.extract_json_blocks(st.session_state.code_analysis_response[project_info.get("project_name")].content)
+        st.header(f"Code Analysis for Project {project_info.get("project_name")}")
+        
+        response = st.session_state.code_analysis_response.get(project_info.get("project_name"))
+        content = getattr(response, "content", None) or str(response)
+        json_blocks = utility_functions.extract_json_blocks(content)
+        
         if json_blocks:
             st.markdown(json_blocks[0].get("detailed_analysis", ""))
             st.session_state["new_work_items"] = json_blocks[0].get("pending_items", [])
@@ -127,12 +138,12 @@ def render_info_tab(project_info, alm_tools):
                 st.write(f"**Work Item {idx}:**")
                 st.write(f"**New Title:** {new_work_item.new_title}")
                 st.write(f"**New Description:** {new_work_item.new_description}")
-                st.write(f"**New Acceptance Criteria:** {', '.join(new_work_item.new_acceptance_criteria)}")
+                st.write(f"**New Acceptance Criteria:** {new_work_item.new_acceptance_criteria}")
                 if st.button(f"📝 Create Work Item {idx}", key=f"create_work_item_{idx}", type="primary"):
                     response = connector.add_work_item(
                     new_work_item.new_title,
                     new_work_item.new_description,
-                    ', '.join(new_work_item.new_acceptance_criteria),
+                    new_work_item.new_acceptance_criteria,
                     project_info.get("project_name")
                     )
                     if response:

@@ -51,5 +51,12 @@ def render(type=None):
         )
         st.session_state.history_response[work_item_id] = invoke_with_history(prompt_text, work_item_id)
         st.header(f"Analysis for Work Item {work_item_id}")
-        st.markdown(st.session_state.history_response[work_item_id].content)
+
+        response = st.session_state.history_response[work_item_id]
+        print(str(response))
+        content = getattr(response, "content", None) if hasattr(response, "content") else None
+        if content:
+            st.markdown(content)
+        else:
+            st.markdown(str(response))
         st.success("End of Analysis.")

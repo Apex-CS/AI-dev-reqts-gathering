@@ -42,7 +42,6 @@ def render():
             options=MODEL_OPTIONS,
             key="LLM_MODEL_NAME",
             placeholder="Select Model",
-            format_func=lambda x: MODEL_MAPPINGS.get(x),
             disabled=not st.session_state.get("is_logged_in", True),
             on_change=on_llm_model_change
         )

@@ -13,7 +13,6 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAI
 
 from langchain_core.chat_history import InMemoryChatMessageHistory
-from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from src.functions.settings import get_llm_settings
 
@@ -43,6 +42,8 @@ OPENAI_MODELS = {
 }
 GOOGLE_MODELS = {
     "gemini-1.5-pro-002",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
 }
 AZURE_OPENAI_MODELS = {
     "apex-demos-gpt-4-32k",
@@ -50,7 +51,7 @@ AZURE_OPENAI_MODELS = {
 }
 ALM_TOOL_TYPES = {"ADO", "Jira", "Custom"}
 
-MODEL_OPTIONS = list(AZURE_OPENAI_MODELS)
+MODEL_OPTIONS = list(AZURE_OPENAI_MODELS.union(OPENAI_MODELS).union(ANTHROPIC_MODELS).union(GOOGLE_MODELS))
 
 # --- Session History Store ---
 
@@ -80,6 +81,8 @@ def construct_model(llm_config: LLMModelConfig) -> BaseChatModel:
         return GoogleGenerativeAI(
             model=llm_name,
             temperature=temperature,
+            max_output_tokens=8096,
+            api_key=os.environ.get("GOOGLE_API_KEY"),
         )
     if llm_name in AZURE_OPENAI_MODELS:
         return AzureChatOpenAI(
@@ -98,13 +101,13 @@ DEFAULT_TEMPERATURE = float(llm_settings.get("LLM_MODEL_TEMPERATURE", 0.0))
 
 llm_config = LLMModelConfig(model_name=DEFAULT_MODEL_NAME, temperature=DEFAULT_TEMPERATURE)
 llm_model = construct_model(llm_config=llm_config)
-chain = RunnableWithMessageHistory(llm_model, get_session_history)
+chain = llm_model
 
 # --- Inference with History ---
 
 def invoke_with_history(prompt: str, session_id: str) -> str:
     print("Invoking with history for session:", session_id, get_session_history(session_id))
-    response = chain.invoke(prompt, {"configurable": {"session_id": session_id}})
+    response = chain.invoke(prompt)
     if isinstance(response, dict) and "content" in response:
         get_session_history(session_id).add_message(response["content"])
     else:

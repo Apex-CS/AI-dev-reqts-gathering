@@ -5,11 +5,10 @@ import streamlit as st
 from dotenv import load_dotenv
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
-import docx
 from fpdf import FPDF
 import markdown
 from bs4 import BeautifulSoup
-from docx import Document
+import docx
 import json
 
 import src.classes.prompt_templates as pt
@@ -40,7 +39,7 @@ DEFAULT_SESSION_STATE = {
         "tool_type": "Requirements Management",
         "tool_name": "ADO",
         "user_email": "",
-        "project_name": "SDLC Demo",
+        "project_name": "AI Requirements Gathering",
     },
     "filename": "",
 }
@@ -176,7 +175,7 @@ def handle_user_input():
     st.toast("Document added. You can now ask questions related to the document.")
     st.session_state.doc_added = True
     if st.session_state.summary:
-        doc = Document()
+        doc = docx.Document()
         doc.add_heading("Document Summary", level=1)
         # Convert markup (markdown) to HTML, then parse and add to docx
         html = markdown.markdown(st.session_state.summary)

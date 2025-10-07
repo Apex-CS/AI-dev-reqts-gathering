@@ -1,3 +1,4 @@
+from datetime import datetime
 import streamlit as st
 import re
 import json
@@ -35,14 +36,13 @@ def extract_json_blocks(text):
     pattern = r'```json\s*([\s\S]*?)\s*```'
     json_blocks = []
     for match in re.findall(pattern, text, re.DOTALL):
-        print(match)
         try:
             json_blocks.append(json.loads(match))
         except Exception:
             continue
     return json_blocks
 
-ignored_fields = ['id', '_links', 'avatar', 'descriptor', 'uniqueName', 'href']
+ignored_fields = ['id', '_links', 'avatar', 'descriptor', 'uniqueName', 'href', 'tzinfo']
 
 
 def clean_json_null_values(data):
@@ -52,5 +52,7 @@ def clean_json_null_values(data):
         return [clean_json_null_values(item) for item in data if item is not None and item != {} and item != [] and item != "" and (not (isinstance(item, str) and "https://" in item)) and item not in ignored_fields]
     elif isinstance(data, str) and not data == "" and (not (isinstance(data, str) and "https://" in data)):
         return clean_html(data)
+    elif isinstance(data, datetime):
+        return data.strftime("%Y-%m-%d %H:%M:%S")
     else:
         return data

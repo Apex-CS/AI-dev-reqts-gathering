@@ -7,7 +7,7 @@ class workItems(BaseModel):
     description: str
     state: str
     assigned_to: str
-    acceptance_criteria: list[str] = []
+    acceptance_criteria: str
     tags: list[str] = []
 
     def __init__(self, **data):
@@ -66,7 +66,7 @@ class ImprovedWorkItem(BaseModel):
             explanation_changes=data.get("explanation_changes"),
             improved_description=data.get("improved_description"),
             improved_title=data.get("improved_title"),
-            improved_acceptance_criteria=list(data.get("improved_acceptance_criteria", []))
+            improved_acceptance_criteria=data.get("improved_acceptance_criteria")
         )
         
     
@@ -83,7 +83,7 @@ class NewWorkItem(BaseModel):
     """NewWorkItem represents a new work item to be created."""
     new_title: str = Field(..., description="Title of the new work item.")
     new_description: str = Field(..., description="Description of the new work item.")
-    new_acceptance_criteria: list[str] = Field(..., description="Acceptance criteria for the new work item.")
+    new_acceptance_criteria: str = Field(..., description="Acceptance criteria for the new work item.")
     
     def to_dict(self):
         return {

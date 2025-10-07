@@ -213,7 +213,8 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
             st.error(f"Error updating work item with test results: {e}")
 
     def get_commit_details(self, commit_url, project_name):
-        repository_id = commit_url.split('%2F')[1]
+        print("commit_url", commit_url)
+        repository_id = commit_url.split('%2f')[1]
         try:
             git_client = self.get_git_client()
             if not git_client:
@@ -285,6 +286,8 @@ class AdoConnector(src.interfaces.connector.ConnectorInterface):
         commits = []
         commits_by_id = self.fetch_work_item_commits_by_id(work_item_id)
         for commits_iter in commits_by_id.get("commits", []):
+            if commits_iter.url.startswith("vstfs:///Git/Commit/") is False:
+                continue
             try:
                 commit_details = self.get_commit_details(commits_iter.url, project_name)
                 current_commit = self.get_git_commit_content(commit_details.remote_url, project_name, commit_details.repository_id)

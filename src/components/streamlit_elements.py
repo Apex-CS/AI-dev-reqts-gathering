@@ -220,6 +220,11 @@ def go_transcription_import():
     st.session_state["leaving_work_item"] = st.session_state["work_item_selector"]
     st.session_state.doc_added = False
     st.session_state["work_item_selector"] = None
+    
+def repo_analysis():
+    st.session_state["show_home"] = "Repo_Analysis"
+    st.session_state["leaving_work_item"] = st.session_state["work_item_selector"]
+    st.session_state["work_item_selector"] = None
 
 def go_settings():
     st.session_state["show_home"] = "Global_Settings"
@@ -266,6 +271,7 @@ def common_sidebar():
                         item_id = item.id
                         item.description = utility_functions.clean_html(item.description)
                         item.acceptance_criteria = utility_functions.clean_html(item.acceptance_criteria)
+                        item.relations = []
                         saved_data = get_rqm_data(
                             utility_functions.SETTINGS_DB, project_name, item_id
                         )
@@ -361,6 +367,7 @@ def common_sidebar():
         )
         st.sidebar.button('🏠 Home', on_click=go_home)
         st.sidebar.button('📝 Transcription Import', on_click=go_transcription_import)
+        st.sidebar.button('🔍 Repository Analysis', on_click=repo_analysis)
         sac.tree(
             items=main_project,
             key='work_item_selector',
