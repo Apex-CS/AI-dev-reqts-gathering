@@ -376,6 +376,30 @@ Return your findings as a structured JSON object with the following keys:
 Ensure your response is clear, actionable, and focused on enhancing code quality.
 """
 
+multiple_requirements_analysis_template = """
+You are a highly skilled Software Architect. Your task is to analyze the title, description and acceptance criteria of multiple work items and provide a comprehensive analysis.
+
+Here is the context to consider:
+{work_items_info}
+
+Your responses should be clear, organized, and actionable. 
+
+Your analysis should include:
+1. infer business processes and workflows
+2. business process extraction
+3. logic tracing
+4. requirement completeness check
+5. potential issues identification
+6. improvement suggestions
+7. prioritization of requests based on urgency, risk, and business impact
+8. traceability matrix creation
+9. dependencies and relationships identification
+10. gaps and overlaps detection
+
+Return your analysis in a clear, organized, and professional manner. Use markdown for structure and clarity. Where appropriate, include tables, lists, or diagrams to illustrate your findings and recommendations.
+
+"""
+
 class Templates ():
     answer_prompt = ChatPromptTemplate.from_template(answer_template)
     initial_transcription_prompt = ChatPromptTemplate.from_template(initial_transcription_template)

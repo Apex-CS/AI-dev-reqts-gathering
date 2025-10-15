@@ -57,6 +57,7 @@ DEFAULT_SESSION_STATE = {
     "work_items_json": {},
     "history_response": {},
     "code_analysis_response": {},
+    "requirements_analysis_response": {},
     "connection_ado_default": {
         "base_url": "https://dev.azure.com/anflores",
         "tool_type": "Requirements Management",

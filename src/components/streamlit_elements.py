@@ -51,6 +51,7 @@ DEFAULT_SESSION_STATE = {
     "commits_json": {},
     "work_items_json": {},
     "history_response": {},
+    "requirements_analysis_response": {},
     "doc_added": False,
 }
 

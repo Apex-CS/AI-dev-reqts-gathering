@@ -6,7 +6,11 @@ from src.functions.work_items import NewWorkItem
 from src.functions.helpers import (
     invoke_with_history
 )
-from src.classes.prompt_templates import multiple_history_analysis_template , project_code_analysis_template
+from src.classes.prompt_templates import (
+    multiple_history_analysis_template, 
+    project_code_analysis_template, 
+    multiple_requirements_analysis_template
+)
 from src.functions.settings import (
     get_project_info,
     save_rqm_tool_details,
@@ -58,7 +62,7 @@ def render_info_tab(project_info, alm_tools):
     st.write(project_info.get("project_description", "No description available."))
     if not project_info.get("project_summary") == "":
         st.markdown(project_info.get("project_summary", "No summary available."))
-    cols = st.columns(2)
+    cols = st.columns(4)
     with cols[0]:
         if st.button("📜 **Run History AI Analysis**", type="primary"):
             st.toast("AI analysis triggered.")
@@ -103,10 +107,41 @@ def render_info_tab(project_info, alm_tools):
             )
             st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
     
+    with cols[2]:
+        if st.button("🔍 **Analyse Requirements**", type="primary"):
+            st.toast("AI Requirements analysis triggered.")
+            work_item_json = {}
+            for project in st.session_state["selected_work_items"]:
+                for item in st.session_state["selected_work_items"][project][:100]:
+                    try:
+                        work_item_json[item.id] = st.session_state.work_items_json[item.id]
+                    except Exception as e:
+                        print(f"Error loading data for item {item.id}: {e}")
+            prompt_text = multiple_requirements_analysis_template.format(
+                work_items_info=str(work_item_json),
+            )
+            st.session_state.requirements_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
+            
+            
+            
+    with cols[3]:
+        if st.button("🔄 **Refresh Data**", type="primary"):
+            st.toast("Refreshing data.")
+            st.session_state["load_tree"] = True
+            st.rerun()
+    
+    st.write("---")
     if "project_name" in project_info and project_info.get("project_name") in st.session_state.history_response:
         st.header(f"History Analysis for Project {project_info.get('project_name')}")
         
         response = st.session_state.history_response.get(project_info.get("project_name"))
+        content = getattr(response, "content", None)
+        st.markdown(content if content else str(response))
+
+    if "project_name" in project_info and project_info.get("project_name") in st.session_state.requirements_analysis_response:
+        st.header(f"Requirements Analysis for Project {project_info.get('project_name')}")
+
+        response = st.session_state.requirements_analysis_response.get(project_info.get("project_name"))
         content = getattr(response, "content", None)
         st.markdown(content if content else str(response))
             
