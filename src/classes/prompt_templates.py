@@ -400,6 +400,38 @@ Return your analysis in a clear, organized, and professional manner. Use markdow
 
 """
 
+code_analysis_template = """
+You are a highly skilled Software Architect. Your task is to analyze a software repository and infer functional and non-functional requirements, design rationale, and produce actionable artifacts for development and QA.
+
+Provided inputs:
+- Source file contents (or specific files): {source_files}
+
+Your analysis should include:
+1. Produce a concise high-level summary of the repository intent and architecture.
+2. For each significant module/service/file:
+    - Describe purpose, primary responsibilities, public API (functions/classes), and dependencies.
+    - Provide evidence references (file path and line ranges or commit ids).
+3. Infer functional requirements (numbered). For each:
+    - Provide a short requirement statement.
+    - Evidence (file(s)/lines/commits).
+    - Confidence level (low/medium/high).
+    - Suggested priority.
+4. Infer non-functional requirements (performance, security, scalability, availability, observability, maintainability) with justification and evidence.
+5. Generate user stories derived from inferred requirements. Each story must include:
+    - id, title, description, acceptance criteria (clear, testable), estimate (S/M/L), priority, evidence.
+6. Create a traceability matrix mapping inferred requirements and user stories to source files and tests.
+7. Identify gaps, ambiguities, missing behavior, and explicit questions to ask stakeholders.
+8. Identify technical debt, code smells, security concerns, and architectural risks. For each include:
+    - description, affected files, priority, remediation recommendation, rough effort estimate.
+9. Produce a prioritized minimal backlog of work items to implement missing/unclear requirements and reduce critical risks.
+10. Suggest concrete test cases (unit, integration, E2E) mapped to user stories and requirements.
+11. Provide a risk assessment for delivering each inferred requirement (likelihood, impact, mitigation).
+12. List explicit assumptions made during inference; mark any items inferred with low confidence.
+
+Output format:
+Return your analysis in a clear, organized, and professional manner. Use markdown for structure and clarity. Where appropriate, include tables, lists, or diagrams to illustrate your findings and recommendations.
+"""
+
 class Templates ():
     answer_prompt = ChatPromptTemplate.from_template(answer_template)
     initial_transcription_prompt = ChatPromptTemplate.from_template(initial_transcription_template)

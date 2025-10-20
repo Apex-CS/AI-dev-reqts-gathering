@@ -21,4 +21,4 @@ pysqlite3==0.5.4
 docx2txt==0.9
 PyPDF2==3.0.1
 jira==3.10.5
-GitPython==4.0.12
+GitPython==3.1.30
