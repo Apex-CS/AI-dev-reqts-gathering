@@ -84,7 +84,6 @@ def construct_model(llm_config: LLMModelConfig) -> BaseChatModel:
         return GoogleGenerativeAI(
             model=llm_name,
             temperature=temperature,
-            max_output_tokens=8096,
             api_key=os.environ.get("GOOGLE_API_KEY"),
         )
     if llm_name in AZURE_OPENAI_MODELS:

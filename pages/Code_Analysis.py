@@ -58,7 +58,7 @@ def analyse_changes_callback(work_item, diff_data):
     )
     st.session_state["result"] =  invoke_with_history(
         template,
-        session_id="global"
+        session_id=st.session_state.get("work_item_selector", "default_session")
     )
 
 def render(type=None):

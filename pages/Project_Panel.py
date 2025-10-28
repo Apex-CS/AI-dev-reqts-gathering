@@ -58,11 +58,10 @@ def render(type=None):
         render_general_tab(alm_tools, project_name)
         
     with tab_chat:
-        messages = st.container(height=500)
-        messages.chat_message("assistant").write("Hello! I am Qualiverse, your AI assistant. How can I help you today?")
+        st.chat_message("assistant").write("Hello! I am Qualiverse, your AI assistant. How can I help you today?")
         if prompt := st.chat_input("Ask something to AI"):
-            messages.chat_message("user").write(prompt)
-            messages.chat_message("assistant").write(ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session")))
+            st.chat_message("user").write(prompt)
+            st.chat_message("assistant").write(ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session")))
         
 def render_info_tab(project_info, alm_tools):
     st.write("### Current Description")
