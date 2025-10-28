@@ -253,3 +253,9 @@ class JiraConnector(src.interfaces.connector.ConnectorInterface):
             st.error(f"Error in get_git_commit_content: {e}")
 
     jira = None
+    
+    def get_work_item_comments():
+        pass
+    
+    def get_work_item_history():
+        pass

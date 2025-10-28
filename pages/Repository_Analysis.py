@@ -67,7 +67,7 @@ def analyze_overall(path):
     st.success("Repository sources analysis completed.")
     prompt = pt.code_analysis_template.format(source_files=files_content)
     st.json(files_content)
-    return invoke_with_history(prompt, session_id="repo_analysis_session")
+    return invoke_with_history(prompt, st.session_state.get("work_item_selector", "default_session"))
 
 def analyze_migration(path):
     files = collect_files(path, tuple(), skip_exts=SKIP_EXTENSIONS)
@@ -84,7 +84,7 @@ def analyze_migration(path):
             with open(file_path, 'r', errors='ignore') as f:
                 content = f.read().replace('\n', ' ')
                 prompt = pt.source_file_key_mapping.format(source_code=content)
-                response = invoke_with_history(prompt, session_id="repo_analysis_session")
+                response = invoke_with_history(prompt, session_id=st.session_state.get("work_item_selector", "default_session"))
                 with open(analysis_file_path, "w") as analysis_file:
                     analysis_file.write(response)
                 extracted_json = extract_json_blocks(response)
@@ -92,7 +92,7 @@ def analyze_migration(path):
     st.success("Repository sources analysis completed.")
     prompt = pt.project_repository_analysis_template.format(pre_analysed_content=files_to_analyze)
     st.json(files_to_analyze)
-    return invoke_with_history(prompt, session_id="repo_analysis_session")
+    return invoke_with_history(prompt, st.session_state.get("work_item_selector", "default_session"))
 
 def render():
     st.title("Apex AI Repository Analysis Tool")

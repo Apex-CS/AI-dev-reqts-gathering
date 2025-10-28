@@ -252,7 +252,7 @@ def common_sidebar():
             for project_rqm in get_all_rqm_tool_details("planningverse/settings.db", project_name=project_name):
                 st.session_state["project_rqm"][project_rqm['tool_name']] = project_name
                 tree_project = project_rqm['tool_name']
-                if True or project_rqm and "tool_name" in project_rqm and project_rqm['tool_name'] not in st.session_state["project_config"]:
+                if project_rqm['tool_type'] in ["ADO"]:
                     alm_tool_class = ado_connector.AdoConnector if project_rqm['tool_type'] == "ADO" else jira_connector.JiraConnector
                     alm_tool = alm_tool_class()
                     st.session_state["alm_project_connector"][project_rqm['tool_name']] = alm_tool

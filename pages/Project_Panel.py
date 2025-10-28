@@ -4,7 +4,7 @@ import re
 from src.functions.work_items import NewWorkItem
 
 from src.functions.helpers import (
-    invoke_with_history
+    invoke_with_history, ask_to_ai
 )
 from src.classes.prompt_templates import (
     multiple_history_analysis_template, 
@@ -36,8 +36,8 @@ def render(type=None):
     st.header(project_name)
 
     # --- Tabs ---
-    tab_info, tab_general = st.tabs(
-        ["Info", "Tool Administration"]
+    tab_info, tab_general, tab_chat = st.tabs(
+        ["Info", "Tool Administration", "Chat"]
     )
 
     # --- Load Data ---
@@ -56,6 +56,13 @@ def render(type=None):
     # --- General Settings Tab ---
     with tab_general:
         render_general_tab(alm_tools, project_name)
+        
+    with tab_chat:
+        messages = st.container(height=500)
+        messages.chat_message("assistant").write("Hello! I am Qualiverse, your AI assistant. How can I help you today?")
+        if prompt := st.chat_input("Ask something to AI"):
+            messages.chat_message("user").write(prompt)
+            messages.chat_message("assistant").write(ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session")))
         
 def render_info_tab(project_info, alm_tools):
     st.write("### Current Description")
@@ -79,13 +86,11 @@ def render_info_tab(project_info, alm_tools):
                         print(f"Error loading data for item {item.id}: {e}")
             prompt_text = multiple_history_analysis_template.format(
                 work_items_info=str(work_item_json),
-                history_json="",#str(history_json).replace("{},", "").replace("\\'", "").replace("&quot;", " ").replace("{}", "").replace("&nbsp;", " "),
+                history_json=str(history_json).replace("{},", "").replace("\\'", "").replace("&quot;", " ").replace("{}", "").replace("&nbsp;", " "),
                 comments_json=str(comments_json)
             )
             #print(str(comments_json))
-            with open("/workspaces/AI-dev-reqts-gathering/prompt_text.txt", "w") as f:
-                f.write(prompt_text)
-            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
+            st.session_state.history_response[project_info.get("project_name")] = invoke_with_history(prompt_text, st.session_state.get("work_item_selector", "default_session"))
 
     with cols[1]:
         if st.button("🧑‍💻 **Run Code AI Analysis**", type="primary"):
@@ -105,7 +110,7 @@ def render_info_tab(project_info, alm_tools):
                 work_items_info=work_item_json,
                 commits=commits_json
             )
-            st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
+            st.session_state.code_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, st.session_state.get("work_item_selector", "default_session"))
     
     with cols[2]:
         if st.button("🔍 **Analyse Requirements**", type="primary"):
@@ -120,7 +125,7 @@ def render_info_tab(project_info, alm_tools):
             prompt_text = multiple_requirements_analysis_template.format(
                 work_items_info=str(work_item_json),
             )
-            st.session_state.requirements_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, project_info.get("project_name"))
+            st.session_state.requirements_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, st.session_state.get("work_item_selector", "default_session"))
             
             
             

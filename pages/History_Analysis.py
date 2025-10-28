@@ -49,7 +49,7 @@ def render(type=None):
             history_json=json_data,
             comments_json=comments
         )
-        st.session_state.history_response[work_item_id] = invoke_with_history(prompt_text, work_item_id)
+        st.session_state.history_response[work_item_id] = invoke_with_history(prompt_text, st.session_state.get("work_item_selector", "default_session"))
         st.header(f"Analysis for Work Item {work_item_id}")
 
         response = st.session_state.history_response[work_item_id]

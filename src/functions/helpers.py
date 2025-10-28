@@ -13,8 +13,10 @@ from langchain_openai import ChatOpenAI, AzureChatOpenAI, AzureOpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAI
 
 from langchain_core.chat_history import InMemoryChatMessageHistory
+from langchain_core.runnables.history import RunnableWithMessageHistory
 
 from src.functions.settings import get_llm_settings
+from langchain.prompts import PromptTemplate
 
 # --- Model Configurations ---
 
@@ -41,9 +43,10 @@ OPENAI_MODELS = {
     "gpt-4-32k",
 }
 GOOGLE_MODELS = {
-    "gemini-1.5-pro-002",
     "gemini-2.5-pro",
-    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
+    "gemini-2.0-flash-001",
 }
 AZURE_OPENAI_MODELS = {
     "apex-demos-gpt-4-32k",
@@ -51,14 +54,14 @@ AZURE_OPENAI_MODELS = {
 }
 ALM_TOOL_TYPES = {"ADO", "Jira", "Custom"}
 
-MODEL_OPTIONS = list(AZURE_OPENAI_MODELS.union(OPENAI_MODELS).union(ANTHROPIC_MODELS).union(GOOGLE_MODELS))
+MODEL_OPTIONS = list(GOOGLE_MODELS)
 
 # --- Session History Store ---
 
 _store: Dict[str, InMemoryChatMessageHistory] = {}
 
 def get_session_history(session_id: str) -> InMemoryChatMessageHistory:
-    return InMemoryChatMessageHistory()
+    return _store.setdefault(session_id, InMemoryChatMessageHistory())
 
 # --- Model Construction ---
 
@@ -101,15 +104,26 @@ DEFAULT_TEMPERATURE = float(llm_settings.get("LLM_MODEL_TEMPERATURE", 0.0))
 
 llm_config = LLMModelConfig(model_name=DEFAULT_MODEL_NAME, temperature=DEFAULT_TEMPERATURE)
 llm_model = construct_model(llm_config=llm_config)
-chain = llm_model
+chain = RunnableWithMessageHistory(llm_model, get_session_history)
 
 # --- Inference with History ---
 
 def invoke_with_history(prompt: str, session_id: str) -> str:
-    print("Invoking with history for session:", session_id, get_session_history(session_id))
-    response = chain.invoke(prompt)
+    print("Invoking with history for session:", session_id)
+    response = chain.invoke(prompt, {"configurable": {"session_id": session_id}})
     if isinstance(response, dict) and "content" in response:
         get_session_history(session_id).add_message(response["content"])
     else:
         get_session_history(session_id).add_message(response)
+    return response
+
+def ask_to_ai(description, session_id):
+    prompt = PromptTemplate(
+        input_variables=["description"],
+        template="{description}\n\n"
+    )
+    response = invoke_with_history(
+        prompt.format(description=description),
+        session_id=session_id
+    )
     return response

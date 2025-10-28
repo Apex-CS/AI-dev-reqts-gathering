@@ -59,11 +59,12 @@ DEFAULT_SESSION_STATE = {
     "code_analysis_response": {},
     "requirements_analysis_response": {},
     "connection_ado_default": {
-        "base_url": "https://dev.azure.com/anflores",
-        "tool_type": "Requirements Management",
-        "tool_name": "ADO",
+        "base_url": "",
+        "tool_type": "",
+        "tool_name": "",
         "user_email": "",
-        "project_name": "AI Requirements Gathering",
+        "project_name": "",
+        "personal_access_token": ""
     },
 }
 
@@ -80,7 +81,7 @@ def ask_to_ai(description):
         prompt.format(description=description),
         session_id=st.session_state.get("work_item_selector", "default_session")
     )
-    return response.content
+    return response
 
 def login_flow():
     st.markdown("### Please Login!")
