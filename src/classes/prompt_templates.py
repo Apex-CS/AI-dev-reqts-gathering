@@ -432,6 +432,36 @@ Output format:
 Return your analysis in a clear, organized, and professional manner. Use markdown for structure and clarity. Where appropriate, include tables, lists, or diagrams to illustrate your findings and recommendations.
 """
 
+requirements_validations_template = """
+
+Given the following Azure DevOps work item title, description, and acceptance criteria, 
+Analyze the information and make suggestions about it, also improve and clarify the information for better understanding:
+Use this documents to ensure that requirements strict are met and to provide context for the work item, strict should comply with the information of the documents:
+
+Documents: {documents}
+
+Title: {title}
+Current Description: {description}
+Acceptance Criteria: {acceptance_criteria}.
+
+Please provide an explanation about the changes
+Organize the explanation in a structured way using categories and sections, and save it in field explanation_changes
+Create a response in the following format:
+
+```json
+{{
+    \work_item_id\: {work_item_id},
+    \explanation_changes\: \String Explanation of Detailed analysis and improvement suggestions of the work item\,
+    \improved_description\: \Improved description of the work item\,
+    \improved_title\: \Improved title of the work item\,
+    \improved_acceptance_criteria\: \String List of Improved acceptance criteria of the work item\
+}}
+```
+
+Make sure to keep the improvements relevant to the original context and requirements of the work item.
+
+"""
+
 class Templates ():
     answer_prompt = ChatPromptTemplate.from_template(answer_template)
     initial_transcription_prompt = ChatPromptTemplate.from_template(initial_transcription_template)

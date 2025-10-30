@@ -5,6 +5,7 @@ import src.components.streamlit_elements as st_elems
 import src.functions.helpers as helpers
 
 import pages.Code_Analysis as code_analysis
+import pages.Requirements_Analysis as requirements_analysis
 import pages.Repository_Analysis as repo_analysis
 import pages.History_Analysis as history_analysis
 import pages.Project_Panel as project_panel
@@ -137,7 +138,7 @@ def render_tabs(tabs_desc, tab_renderers, tab_type):
     col1, col2 = st.columns([8, 1], gap="small")
     with col1:
         selected_tab = sac.tabs(
-            [sac.TabsItem(label=desc, disabled=(i == 2)) for i, desc in enumerate(tabs_desc)],
+            [sac.TabsItem(label=desc, disabled=(i == 5)) for i, desc in enumerate(tabs_desc)],
             align='left', size='md', return_index=True, index=st.session_state.get("selected_tab_index")
         )
         st.session_state["current_page"] = tabs_desc[selected_tab]
@@ -175,8 +176,8 @@ def planningverse_work_flow():
     st.session_state["selected_tab_index"] = 0
     if not isinstance(work_item_id, list):
         render_tabs(
-            ["Interactions Analysis", "Code Analysis"],
-            [history_analysis.render, code_analysis.render],
+            ["Interactions Analysis", "Code Analysis", "Requirements Analysis"],
+            [history_analysis.render, code_analysis.render, requirements_analysis.render],
             tab_type="requirement"
         )
     else:

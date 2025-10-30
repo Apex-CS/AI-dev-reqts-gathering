@@ -49,6 +49,7 @@ class ImprovedWorkItem(BaseModel):
     )
     
     def from_content(cls, content: str):
+        print("Parsing ImprovedWorkItem from content", content)
         """Parse the content string to create an ImprovedWorkItem instance."""
         try:
             data = json.loads(content)
