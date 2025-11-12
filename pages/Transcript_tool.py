@@ -39,7 +39,7 @@ DEFAULT_SESSION_STATE = {
         "tool_type": "Requirements Management",
         "tool_name": "ADO",
         "user_email": "",
-        "project_name": "AI Requirements Gathering",
+        "project_name": "Apex Code Platform",
     },
     "filename": "",
 }

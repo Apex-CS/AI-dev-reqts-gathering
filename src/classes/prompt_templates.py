@@ -276,6 +276,51 @@ if any section is not applicable or information is missing, ignore that section 
 """
 
 project_repository_analysis_template = """
+You are a highly skilled Software Architect. Your task is to thoroughly analyze the provided repository with a focus on code upgrade assistance, regression analysis, and bug prediction.
+
+Here is the source code analysis content from the repository:
+{files_to_analyze}
+
+this are the requirements for the analysis:
+{requirements}
+
+**Main Goals:**
+- Identify opportunities for code upgrades and modernization.
+- Perform regression analysis to detect areas prone to bugs or failures.
+- Predict potential bugs and highlight risky code sections.
+- Suggest actionable refactoring and optimization improvements.
+
+**Your analysis should include:**
+1. **Code Upgrade Assistance**
+    - Identify outdated patterns, deprecated libraries, or legacy code.
+    - Recommend modern alternatives and upgrade paths.
+    - Highlight areas that would benefit from code modernization.
+
+2. **Regression Analysis**
+    - Analyze code history and recent changes for regression risks.
+    - Detect modules or functions with frequent bug fixes or instability.
+    - Summarize regression-prone areas and their impact.
+
+3. **Bug Prediction**
+    - Predict likely bug hotspots based on code complexity, change frequency, and known issues.
+    - List specific files, functions, or lines at high risk for bugs.
+    - Provide rationale for each prediction.
+
+4. **Refactoring & Optimization Suggestions**
+    - Recommend specific refactoring actions to improve code quality, maintainability, and performance.
+    - Suggest optimizations for scalability, reliability, and efficiency.
+    - Prioritize improvements based on impact and urgency.
+
+5. **Actionable Recommendations**
+    - Summarize key findings and provide a prioritized list of recommended actions.
+    - Advise on tools, frameworks, or practices to support code upgrades and regression prevention.
+    - Include guidance for ongoing code health monitoring.
+
+**Response Format:**  
+Return your analysis in a clear, organized, and professional manner. Use markdown for structure and clarity. Where appropriate, include tables, lists, or diagrams to illustrate your findings and recommendations.
+"""
+
+migration_planning_analysis_template = """
 You are a highly skilled Software Architect. Your task is to thoroughly analyze the provided repository in preparation for migration to a new platform. Your goal is to ensure the code aligns with the specified requirements, identify any issues, and provide actionable recommendations for a successful migration.
 
 the migration is from python to C#

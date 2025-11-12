@@ -43,7 +43,10 @@ OPENAI_MODELS = {
 GOOGLE_MODELS = {
     "gemini-1.5-pro-002",
     "gemini-2.5-pro",
-    "gemini-2.0-flash",
+    "gemini-2.0-flash-001",
+    "gemini-2.0-flash-lite-001",
+    "gemini-2.5-flash",
+    "gemini-2.5-flash-lite",
 }
 AZURE_OPENAI_MODELS = {
     "apex-demos-gpt-4-32k",

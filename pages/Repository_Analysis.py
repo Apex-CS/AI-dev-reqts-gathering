@@ -49,6 +49,41 @@ def render():
             for root, dirs, files in os.walk(path):
                 if ".git" in dirs:
                     dirs.remove(".git")
+                
+            st.success("Repository sources analysis completed.")
+            
+            if analysis_type == "Overall Analysis":
+                work_item_json = {}
+                files_to_analyze = []
+                for project in st.session_state["selected_work_items"]:
+                    for item in st.session_state["selected_work_items"][project][:100]:
+                        try:
+                            work_item_json[item.id] = st.session_state.work_items_json[item.id]
+                        except Exception as e:
+                            print(f"Error loading data for item {item.id}: {e}")
+                        
+                for root, dirs, files in os.walk(path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        try:
+                            with open(file_path, "r", encoding="utf-8", errors="ignore") as analysis_file:
+                                files_to_analyze.append(analysis_file.read())
+                        except Exception as e:
+                            print(f"Error reading file {file_path}: {e}")
+                        
+                prompt = pt.project_repository_analysis_template.format(files_to_analyze=files_to_analyze, requirements=work_item_json)
+                st.write(prompt)
+                
+                
+                
+                
+            elif analysis_type == "Code Quality":
+                prompt = pt.code_quality_analysis_template.format(pre_analysed_content=files_to_analyze)
+            elif analysis_type == "Security Vulnerabilities":
+                prompt = pt.security_vulnerabilities_analysis_template.format(pre_analysed_content=files_to_analyze)
+            elif analysis_type == "Dependency Analysis":
+                prompt = pt.dependency_analysis_template.format(pre_analysed_content=files_to_analyze)
+            elif analysis_type == "Migration Planning":
                 for file in files:
                     if file.endswith((
                         ".analysis.txt", ".docx", ".pdf", ".md", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".bmp", ".gitignore",
@@ -78,13 +113,12 @@ def render():
                                 analysis_file.write(response)
                             extracted_json = extract_json_blocks(response)
                             files_to_analyze.append(extracted_json)
-            st.success("Repository sources analysis completed.")
-            
-            prompt = pt.project_repository_analysis_template.format(pre_analysed_content=files_to_analyze)
-            st.json(files_to_analyze)
+                            
+                prompt = pt.migration_planning_analysis_template.format(pre_analysed_content=files_to_analyze)
             
             response = invoke_with_history(prompt, session_id="repo_analysis_session")
-            st.markdown("### Overall Repository Analysis:")
+            print(response)
+            st.markdown("### Repository Analysis:")
             # Display the response content or message
             if hasattr(response, "content"):
                 st.write(response.content)
