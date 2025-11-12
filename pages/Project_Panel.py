@@ -4,7 +4,10 @@ import re
 from src.functions.work_items import NewWorkItem
 
 from src.functions.helpers import (
-    invoke_with_history, ask_to_ai
+    invoke_with_history, 
+    ask_to_ai,
+    render_messages,
+    add_message
 )
 from src.classes.prompt_templates import (
     multiple_history_analysis_template, 
@@ -24,6 +27,7 @@ from src.functions import utility_functions
 st.session_state.setdefault("current_page", "Settings")
 st.session_state.setdefault("project_config", {})
 st.session_state.setdefault("selected_work_items", {})
+st.session_state.setdefault("messages", ["Hello! I am Planningverse, your AI assistant. How can I help you today?"])
 
 def clean_html(text):
     if not text:
@@ -34,7 +38,6 @@ def clean_html(text):
 def render(type=None):
     project_name = st.session_state.get("current_project", "Unknown Project")
     st.header(project_name)
-
     # --- Tabs ---
     tab_info, tab_general, tab_chat = st.tabs(
         ["Info", "Tool Administration", "Chat"]
@@ -58,10 +61,13 @@ def render(type=None):
         render_general_tab(alm_tools, project_name)
         
     with tab_chat:
-        st.chat_message("assistant").write("Hello! I am Qualiverse, your AI assistant. How can I help you today?")
+        #st.chat_message("assistant").write()
         if prompt := st.chat_input("Ask something to AI"):
-            st.chat_message("user").write(prompt)
-            st.chat_message("assistant").write(ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session")))
+            add_message("user", prompt, st.session_state.get("work_item_selector", "default_session"))
+            response = ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session"))
+            add_message("assistant", response, st.session_state.get("work_item_selector", "default_session"))
+        render_messages(st.session_state.messages, st.session_state.get("work_item_selector", "default_session"))
+            
         
 def render_info_tab(project_info, alm_tools):
     st.write("### Current Description")
@@ -124,6 +130,7 @@ def render_info_tab(project_info, alm_tools):
             prompt_text = multiple_requirements_analysis_template.format(
                 work_items_info=str(work_item_json),
             )
+            print(prompt_text)
             st.session_state.requirements_analysis_response[project_info.get("project_name")] = invoke_with_history(prompt_text, st.session_state.get("work_item_selector", "default_session"))
             
             

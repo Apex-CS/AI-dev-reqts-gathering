@@ -109,7 +109,7 @@ Your analysis should include:
     {{
         "title": "Title of the work item",
         "description": "Detailed description of the work item",
-        "acceptance_criteria": "List of acceptance criteria items"
+        "acceptance_criteria": "Detailed description of acceptance criteria items"
     }}
 
 - Create a list of relevant test cases to validate the code changes and requirements. Name this list `test_cases`. Each test case should follow this format:
@@ -154,7 +154,7 @@ Return a JSON object with the following keys:
     {{
         "title": "Title of the work item",
         "description": "Detailed description of the work item",
-        "acceptance_criteria": "List of acceptance criteria items"
+        "acceptance_criteria": "Detailed description of acceptance criteria items"
     }}
 
 - Create a list of relevant test cases to validate the code changes and requirements. Name this list `test_cases`. Each test case should follow this format:
@@ -454,7 +454,7 @@ Create a response in the following format:
     \explanation_changes\: \String Explanation of Detailed analysis and improvement suggestions of the work item\,
     \improved_description\: \Improved description of the work item\,
     \improved_title\: \Improved title of the work item\,
-    \improved_acceptance_criteria\: \String List of Improved acceptance criteria of the work item\
+    \improved_acceptance_criteria\: \Detailed description of Improved acceptance criteria of the work item\
 }}
 ```
 

@@ -24,13 +24,13 @@ def render():
         st.subheader("LLM configuration settings.")
 
         llm_settings = get_llm_settings(utility_functions.SETTINGS_DB)
-        model_index = MODEL_OPTIONS.index(llm_settings.get("LLM_MODEL_NAME", "apex-demos-gpt-4o"))
+        model_index = MODEL_OPTIONS.index(llm_settings.get("LLM_MODEL_NAME", "gemini-2.5-flash-lite"))
 
         def on_llm_model_change():
             save_llm_settings(
                 db_path=utility_functions.SETTINGS_DB,
                 settings={
-                    "LLM_MODEL_NAME": st.session_state.get("LLM_MODEL_NAME", "apex-demos-gpt-4o"),
+                    "LLM_MODEL_NAME": st.session_state.get("LLM_MODEL_NAME", "gemini-2.5-flash-lite"),
                     "LLM_MODEL_TEMPERATURE": st.session_state.get("LLM_MODEL_TEMPERATURE", 0.0)
                 }
             )

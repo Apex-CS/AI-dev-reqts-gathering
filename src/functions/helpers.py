@@ -1,6 +1,7 @@
 import os
 from typing import List, Optional, Dict
 
+import streamlit as st
 from pydantic import BaseModel, Field
 
 from langchain_community.document_loaders import PyPDFLoader, Docx2txtLoader
@@ -54,7 +55,7 @@ AZURE_OPENAI_MODELS = {
 }
 ALM_TOOL_TYPES = {"ADO", "Jira", "Custom"}
 
-MODEL_OPTIONS = list(GOOGLE_MODELS)
+MODEL_OPTIONS = list(GOOGLE_MODELS.union(AZURE_OPENAI_MODELS))
 
 # --- Session History Store ---
 
@@ -83,7 +84,8 @@ def construct_model(llm_config: LLMModelConfig) -> BaseChatModel:
     if llm_name in GOOGLE_MODELS:
         return GoogleGenerativeAI(
             model=llm_name,
-            temperature=temperature,
+            temperature=temperature,            
+            max_output_tokens=65536,
             api_key=os.environ.get("GOOGLE_API_KEY"),
         )
     if llm_name in AZURE_OPENAI_MODELS:
@@ -98,23 +100,43 @@ def construct_model(llm_config: LLMModelConfig) -> BaseChatModel:
 # --- LLM Chain Initialization ---
 
 llm_settings = get_llm_settings("planningverse/settings.db")
-DEFAULT_MODEL_NAME = llm_settings.get("LLM_MODEL_NAME", "apex-demos-gpt-4o")
+DEFAULT_MODEL_NAME = llm_settings.get("LLM_MODEL_NAME", "gemini-2.5-flash-lite")
 DEFAULT_TEMPERATURE = float(llm_settings.get("LLM_MODEL_TEMPERATURE", 0.0))
 
 llm_config = LLMModelConfig(model_name=DEFAULT_MODEL_NAME, temperature=DEFAULT_TEMPERATURE)
 llm_model = construct_model(llm_config=llm_config)
 chain = RunnableWithMessageHistory(llm_model, get_session_history)
+#chain = llm_model
 
 # --- Inference with History ---
 
 def invoke_with_history(prompt: str, session_id: str) -> str:
     print("Invoking with history for session:", session_id)
     response = chain.invoke(prompt, {"configurable": {"session_id": session_id}})
-    if isinstance(response, dict) and "content" in response:
+    #response = chain.invoke(prompt)
+    print("hasattr(response, content):", hasattr(response, "content"))
+    # Handle langchain_core.messages.ai.AIMessage (has .content) and extract its payload
+    if hasattr(response, "content"):
+        content = getattr(response, "content")
+        if isinstance(content, dict) and "content" in content:
+            response = content["content"]
+        else:
+            response = content
+    elif "content" in str(response):
         get_session_history(session_id).add_message(response["content"])
+        response = response["content"]
     else:
         get_session_history(session_id).add_message(response)
+        
     return response
+
+def render_messages(messages, session_id):
+    for message in messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+            
+def add_message(role, content, session_id):
+    st.session_state.messages[session_id].append({"role": role, "content": content})
 
 def ask_to_ai(description, session_id):
     prompt = PromptTemplate(

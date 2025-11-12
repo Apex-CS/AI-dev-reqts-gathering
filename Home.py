@@ -31,7 +31,7 @@ st.set_page_config(
 
 # --- Globals ---
 DEFAULT_SESSION_STATE = {
-    "LLM_MODEL_NAME": "apex-demos-gpt-4o",
+    "LLM_MODEL_NAME": "gemini-2.5-flash-lite",
     "LLM_MODEL_TEMPERATURE": 0.0,
     "work_item": 0,
     "work_item_test": 0,
