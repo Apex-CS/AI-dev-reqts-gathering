@@ -33,7 +33,7 @@ from src.functions.settings import (
 # --- Constants and Config ---
 load_dotenv()
 DEFAULT_SESSION_STATE = {
-    "messages": [],
+    "messages": {},
     "chat_history_store": {},
     "summary": None,
     "user_stories": None,
@@ -77,7 +77,9 @@ def render_messages(messages):
             st.markdown(message["content"])
 
 def add_message(role, content):
-    st.session_state.messages.append({"role": role, "content": content})
+    if "transcript_session" not in st.session_state.messages:
+        st.session_state.messages["transcript_session"] = []
+    st.session_state.messages["transcript_session"].append({"role": role, "content": content})
 
 def export_chat_to_pdf(messages):
     pdf = FPDF()
@@ -140,7 +142,7 @@ def handle_file_upload():
         
 
 def handle_user_input():
-    render_messages(st.session_state.messages)
+    render_messages(st.session_state.messages["transcript_session"])
     user_input = st.chat_input(
         "Type your message here...",
         accept_file=True,
@@ -156,9 +158,9 @@ def handle_user_input():
             session_id="transcript_session"
         )
         add_message("assistant", response)
-        render_messages(st.session_state.messages)
+        render_messages(st.session_state.messages["transcript_session"])
     if st.button("📄 Export Chat to PDF", type="primary"):
-        pdf_output = export_chat_to_pdf(st.session_state.messages)
+        pdf_output = export_chat_to_pdf(st.session_state.messages["transcript_session"])
         st.download_button(
             label="Download Chat as PDF",
             data=pdf_output,

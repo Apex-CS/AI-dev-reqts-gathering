@@ -27,7 +27,7 @@ from src.functions import utility_functions
 st.session_state.setdefault("current_page", "Settings")
 st.session_state.setdefault("project_config", {})
 st.session_state.setdefault("selected_work_items", {})
-st.session_state.setdefault("messages", ["Hello! I am Planningverse, your AI assistant. How can I help you today?"])
+st.session_state.setdefault("messages", {})
 
 def clean_html(text):
     if not text:
@@ -66,7 +66,9 @@ def render(type=None):
             add_message("user", prompt, st.session_state.get("work_item_selector", "default_session"))
             response = ask_to_ai(prompt, st.session_state.get("work_item_selector", "default_session"))
             add_message("assistant", response, st.session_state.get("work_item_selector", "default_session"))
-        render_messages(st.session_state.messages, st.session_state.get("work_item_selector", "default_session"))
+        if not st.session_state.get("work_item_selector", "default_session") in st.session_state.messages:
+            st.session_state.messages[st.session_state.get("work_item_selector", "default_session")] = [{"role": "assistant", "content": "Hello! I am Planningverse, your AI assistant. How can I help you today?"}]
+        render_messages(st.session_state.messages[st.session_state.get("work_item_selector", "default_session")], st.session_state.get("work_item_selector", "default_session"))
             
         
 def render_info_tab(project_info, alm_tools):
@@ -178,7 +180,12 @@ def render_info_tab(project_info, alm_tools):
                     st.success(f"Test Case {idx} created successfully.")
 
             st.header("New Work Items")
-            connector = st.session_state["current_connector"]
+            alm_connectors = st.session_state.get("alm_project_connector", {})
+            first_key = next(iter(alm_connectors), None)
+            connector = alm_connectors.get(first_key) if first_key else None
+            project_config = st.session_state.get("project_config", {}).get(project_name, {})
+            print("project_name:", project_name)
+            print("project_config:", project_config)
             for idx, new_work in enumerate(st.session_state.get("new_work_items", []), 1):
                 new_work_item = NewWorkItem.from_dict(new_work)
                 st.write(f"**Work Item {idx}:**")
@@ -190,7 +197,7 @@ def render_info_tab(project_info, alm_tools):
                     new_work_item.new_title,
                     new_work_item.new_description,
                     new_work_item.new_acceptance_criteria,
-                    project_info.get("project_name")
+                    project_name
                     )
                     if response:
                         st.success(f"Work Item {idx} created successfully with ID: {response.id}")
